@@ -1,0 +1,12 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# IDE / VS Code
+.vscode/
+.idea/
+*.user
+*.userossc
+
+# OS generated files
+.DS_Store
