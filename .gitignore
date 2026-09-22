@@ -10,3 +10,8 @@
 
 # OS generated files
 .DS_Store
+
+# Database
+*.db
+*.db-shm
+*.db-wal
