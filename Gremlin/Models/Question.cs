@@ -8,7 +8,7 @@ public class Question
     public int? type_id {get; set;}
     public string? title {get; set;}
 
-    public JsonElement content;
+    public string? content;
 
     // Navigation property
     public Quiz? Quiz { get; set; }
