@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Gremlin.Models;
-using Gremlin.ViewModels; 
+using Gremlin.ViewModels;
+using Microsoft.EntityFrameworkCore;
 
 namespace Gremlin.Controllers;
 
@@ -15,7 +16,10 @@ public class QuizController : Controller
 
     public IActionResult Table()
     {
-        List<Quiz> quizzes = _quizDbContext.Quizzes.ToList();
+        List<Quiz> quizzes = _quizDbContext.Quizzes
+            .Include(q => q.User)
+            .Include(q => q.Questions)
+            .ToList();
         var quizzesViewModel = new QuizzesViewModel(quizzes, "Table");
         return View(quizzesViewModel);
     }

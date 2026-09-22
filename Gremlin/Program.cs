@@ -15,6 +15,12 @@ builder.Services.AddDbContext<QuizDbContext>(options =>
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+    DBInit.Seed(app);
+}
+
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<QuizDbContext>();
