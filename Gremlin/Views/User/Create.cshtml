@@ -1,6 +1,6 @@
 @model User
 
-<h2>Create New USer</h2>
+<h2>Create New User</h2>
 <form asp-action="Create">
     <div class="form-group">
         <label asp-for="display_name"></label><span class="text-danger">*</span>
@@ -13,5 +13,4 @@
         <span asp-validation-for="password_hash" class="text-danger"></span>
     </div>
     <button type="submit" class="btn btn-primary">Create</button>
-    <a asp-action="Table" class="btn btn-secondary">Back to Table View</a>
 </form>

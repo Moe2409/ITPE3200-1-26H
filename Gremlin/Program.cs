@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Gremlin.Models;
 
@@ -12,6 +13,16 @@ builder.Services.AddDbContext<GremlinDbContext>(options =>
         builder.Configuration["ConnectionStrings:GremlinDbContextConnection"]
     );
 });
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "GremlinAuthCookie";
+        options.LoginPath = "/user/login";
+        options.AccessDeniedPath = "/user/accessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+    });
 
 var app = builder.Build();
 
@@ -39,6 +50,7 @@ app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();

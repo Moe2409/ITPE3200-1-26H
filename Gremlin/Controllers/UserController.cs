@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Gremlin.Models;
 using Gremlin.ViewModels;
@@ -42,7 +45,7 @@ public class UserController : Controller
         return View(viewModel);
     }
 
-    [HttpGet]
+    [HttpGet("user/create")]
     public IActionResult Create()
     {
         return View();
@@ -59,5 +62,43 @@ public class UserController : Controller
         }
         
         return View(user);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Login(string username, string password)
+    {
+        var user = await _gremlinDbContext.Users
+            .FirstOrDefaultAsync(u => u.display_name == username && u.password_hash == password);
+
+        if (user == null)
+        {
+            ModelState.AddModelError("", "Invalid login credentials.");
+            return View();
+        }
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.id.ToString()),
+            new Claim(ClaimTypes.Name, user.display_name ?? "")
+        };
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = true
+        };
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties);
+
+        return RedirectToAction("Index", "Home");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return RedirectToAction("Login");
     }
 }
