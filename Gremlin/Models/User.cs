@@ -1,10 +1,14 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Gremlin.Models;
 
 public class User
 {
     public int id {get; set;}
-    public string? display_name {get; set;}
-    public string? password_hash {get; set;}
+    [Required]
+    public string display_name {get; set;} = string.Empty;
+    [Required]
+    public string password_hash {get; set;} = string.Empty;
 
     // Navigation properties
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>();

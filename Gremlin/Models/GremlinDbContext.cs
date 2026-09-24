@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Gremlin.Models;
 
 
-public class QuizDbContext : DbContext
+public class GremlinDbContext : DbContext
 {
-    public QuizDbContext(DbContextOptions<QuizDbContext> options) : base(options)
+    public GremlinDbContext(DbContextOptions<GremlinDbContext> options) : base(options)
     {
         
     }

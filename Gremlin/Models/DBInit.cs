@@ -7,7 +7,7 @@ public static class DBInit
     public static void Seed(IApplicationBuilder app)
     {
         using var serviceScope = app.ApplicationServices.CreateScope();
-        QuizDbContext context = serviceScope.ServiceProvider.GetRequiredService<QuizDbContext>();
+        GremlinDbContext context = serviceScope.ServiceProvider.GetRequiredService<GremlinDbContext>();
         context.Database.EnsureDeleted();
         context.Database.EnsureCreated();
         
@@ -15,13 +15,15 @@ public static class DBInit
         {
             var users = new List<User>
             {
-                new User {display_name = "Harry potter"}
+                new User {display_name = "Harry potter"},
+                new User {display_name = "Jean Luc Picard"}
             };
             context.Users.AddRange(users);
             context.SaveChanges();
         }
 
         var defaultUser = context.Users.First();
+        var defaultUser2 = context.Users.OrderBy(u => u.id).Last();
 
         if (!context.Quizzes.Any())
         {
@@ -34,7 +36,7 @@ public static class DBInit
                 },new Quiz
                 {
                     title = "Hamburger",
-                    user_id = defaultUser.id
+                    user_id = defaultUser2.id
                 },
             };
             context.Quizzes.AddRange(quizzes);

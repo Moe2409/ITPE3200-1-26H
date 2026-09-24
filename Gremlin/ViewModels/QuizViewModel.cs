@@ -7,10 +7,13 @@ namespace Gremlin.ViewModels
         public IEnumerable<Quiz> Quizzes;
         public string? CurrentViewName;
 
-        public QuizzesViewModel(IEnumerable<Quiz> quizzes, string? currentViewName)
+        public int? UserId { get; set; }
+
+        public QuizzesViewModel(IEnumerable<Quiz> quizzes, string? currentViewName, int? userId = null)
         {
             Quizzes = quizzes;
             CurrentViewName = currentViewName;
+            UserId = userId;
         }
     }
 }

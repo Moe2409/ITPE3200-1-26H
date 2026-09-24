@@ -6,10 +6,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddDbContext<QuizDbContext>(options =>
+builder.Services.AddDbContext<GremlinDbContext>(options =>
 {
     options.UseSqlite(
-        builder.Configuration["ConnectionStrings:QuizDbContextConnection"]
+        builder.Configuration["ConnectionStrings:GremlinDbContextConnection"]
     );
 });
 
@@ -23,7 +23,7 @@ if (app.Environment.IsDevelopment())
 
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<QuizDbContext>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<GremlinDbContext>();
     dbContext.Database.EnsureCreated();
 }
 

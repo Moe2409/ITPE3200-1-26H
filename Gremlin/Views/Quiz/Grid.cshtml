@@ -1,0 +1,15 @@
+@model IEnumerable<Quiz>
+
+<h1>List of Quizzes {@ViewBag.CurrentViewName View}</h1>
+<a href="/Quiz/Table">Table View</a>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    @foreach (var quiz in Model)
+    {
+        <div class="col">
+            <div>
+                
+            </div>
+        </div>
+    }
+</div>

@@ -1,29 +1,14 @@
-@using Microsoft.EntityFrameworkCore.Infrastructure
 @model Gremlin.ViewModels.QuizzesViewModel
 
-<h1>List of Quizzes {@ViewBag.CurrentViewName View}</h1>
+<h2>
+    @if (Model.UserId.HasValue)
+    {
+        <span>Quizzes created by User #@Model.UserId</span>
+    }
+    else
+    {
+        <span>All Quizzes</span>
+    }
+</h2>
 
-<a href="/Quiz/Table">Table View</a>
-<div class="container">
-    <table>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Title</th>
-            <th>Author</th>
-            <th>Questions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var quiz in Model.Quizzes)
-        {
-            <tr>
-                <td>@quiz.id</td>
-                <td>@quiz.title</td>
-                <td>@(quiz.User?.display_name ?? "Unknown")</td>
-                <td>@(quiz.Questions?.Count ?? 0)</td>
-            </tr>
-        }
-    </tbody>
-</table>
-</div>
+<partial name="_QuizTable" model="Model" />

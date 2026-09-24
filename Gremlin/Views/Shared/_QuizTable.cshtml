@@ -1,0 +1,27 @@
+@model Gremlin.ViewModels.QuizzesViewModel
+
+<table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Questions</th>
+            </tr>   
+        </thead>
+        <tbody>
+            @foreach (var quiz in Model.Quizzes)
+            {
+                <tr>
+                    <td>
+                        <a asp-controller="Quiz"
+                            asp-action="Details"
+                            asp-route-id="@quiz.id">@quiz.id</a>
+                    </td> 
+                    <td>@quiz.title</td>
+                    <td>@(quiz.User?.display_name ?? "Unknown")</td>
+                    <td>@(quiz.Questions?.Count ?? 0)</td>
+                </tr>
+            }
+        </tbody>
+    </table>

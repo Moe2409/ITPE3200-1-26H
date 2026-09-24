@@ -1,0 +1,56 @@
+@model Gremlin.ViewModels.UserViewModel
+
+@{
+    ViewData["Title"] = Model.User.display_name ?? "User Profile";
+}
+
+<h2>User Profile: @(Model.User.display_name ?? $"User #{Model.User.id}")</h2>
+
+<hr />
+
+<h3>Created Quizzes (@Model.Quizzes.Count())</h3>
+@if (!Model.Quizzes.Any())
+{
+    <p>This user hasn't created any quizzes yet.</p>
+}
+else
+{
+    <ul>
+        @foreach (var quiz in Model.Quizzes)
+        {
+            <li>
+                <strong>@quiz.title</strong> — @(quiz.Questions?.Count ?? 0) Questions
+            </li>
+        }
+    </ul>
+}
+
+<hr />
+
+<h3>Quiz History (@Model.Histories.Count())</h3>
+@if (!Model.Histories.Any())
+{
+    <p>This user hasn't completed any quizzes yet.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Quiz</th>
+                <th>Score</th>
+                <th>Completed At</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var history in Model.Histories)
+            {
+                <tr>
+                    <td>@(history.Quiz?.title ?? "Deleted Quiz")</td>
+                    <td>@history.score</td>
+                    <td>@history.completed_at?.ToString("yyyy-MM-dd HH:mm")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

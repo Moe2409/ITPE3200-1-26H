@@ -1,0 +1,10 @@
+@model Quiz
+
+<h2>Create New Quiz</h2>
+<form asp-action="Create">
+    <div class="form-group">
+        <label asp-for="title"></label><span class="text-danger">*</span>
+        <input asp-for="title" class="form-control" />
+        <span asp-validation-for="title" class="text-danger"></span>
+    </div>
+</form>
