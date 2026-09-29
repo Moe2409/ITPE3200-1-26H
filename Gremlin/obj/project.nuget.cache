@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "kVYROgA6M2o=",
+  "dgSpecHash": "8Yrb5+qe77c=",
   "success": true,
-  "projectFilePath": "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\gremlin\\Gremlin.csproj",
+  "projectFilePath": "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\Gremlin\\Gremlin.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\LeonE\\.nuget\\packages\\castle.core\\5.2.1\\castle.core.5.2.1.nupkg.sha512",
     "C:\\Users\\LeonE\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
