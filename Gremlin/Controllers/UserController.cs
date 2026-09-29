@@ -10,19 +10,22 @@ namespace Gremlin.Controllers;
 
 public class UserController : Controller
 {
+    //logger for the user
+    private readonly ILogger<UserController> _logger;
     private readonly GremlinDbContext _gremlinDbContext;
-
-    public UserController(GremlinDbContext gremlinDbContext)
+    
+    public UserController(GremlinDbContext gremlinDbContext, ILogger<UserController> logger)
     {
         _gremlinDbContext = gremlinDbContext;
+        _logger = logger;
     }
-    
 
-    [HttpGet("user/{id:int}")]
-    public async Task<IActionResult> Details(int id)
+
+    [HttpGet("user/{id}")]
+    public async Task<IActionResult> Details(string id)
     {
         var user = await _gremlinDbContext.Users
-            .FirstOrDefaultAsync(u => u.id == id);
+            .FirstOrDefaultAsync(u => u.Id == id);
 
         if (user == null)
         {
@@ -58,17 +61,17 @@ public class UserController : Controller
         {
             _gremlinDbContext.Users.Add(user);
             _gremlinDbContext.SaveChanges();
-            return RedirectToAction(nameof(Details), new { id = user.id });
+            return RedirectToAction(nameof(Details), new { id = user.Id });
         }
         
         return View(user);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Login(string username, string password)
+    public async Task<IActionResult> Login(string username)
     {
         var user = await _gremlinDbContext.Users
-            .FirstOrDefaultAsync(u => u.display_name == username && u.password_hash == password);
+            .FirstOrDefaultAsync(u => u.DisplayName == username);
 
         if (user == null)
         {
@@ -78,8 +81,8 @@ public class UserController : Controller
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.id.ToString()),
-            new Claim(ClaimTypes.Name, user.display_name ?? "")
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Name, user.DisplayName ?? "")
         };
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -100,5 +103,34 @@ public class UserController : Controller
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction("Login");
+    }
+
+    [HttpGet("user/update")]
+    public IActionResult Update()
+    {
+        return View();
+    }
+
+    [HttpGet]
+    public IActionResult Update(string id)
+    {
+        var user = _gremlinDbContext.Users.Find(id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+        return View(user);
+    }
+
+    [HttpPost]
+    public IActionResult Update(User user)
+    {
+        if (ModelState.IsValid)
+        {
+            _gremlinDbContext.Users.Update(user);
+            _gremlinDbContext.SaveChanges();
+            return RedirectToAction(nameof(Details), new { id = user.Id });
+        }
+        return View(user);
     }
 }

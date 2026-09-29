@@ -1,0 +1,177 @@
+2026-09-29 13:24:51.897 +02:00 [INF] Executed DbCommand (9ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+PRAGMA journal_mode = 'wal';
+2026-09-29 13:24:51.977 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "AspNetRoles" (
+    "Id" TEXT NOT NULL CONSTRAINT "PK_AspNetRoles" PRIMARY KEY,
+    "Name" TEXT NULL,
+    "NormalizedName" TEXT NULL,
+    "ConcurrencyStamp" TEXT NULL
+);
+2026-09-29 13:24:51.979 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "AspNetUsers" (
+    "Id" TEXT NOT NULL CONSTRAINT "PK_AspNetUsers" PRIMARY KEY,
+    "UserName" TEXT NULL,
+    "NormalizedUserName" TEXT NULL,
+    "Email" TEXT NULL,
+    "NormalizedEmail" TEXT NULL,
+    "EmailConfirmed" INTEGER NOT NULL,
+    "PasswordHash" TEXT NULL,
+    "SecurityStamp" TEXT NULL,
+    "ConcurrencyStamp" TEXT NULL,
+    "PhoneNumber" TEXT NULL,
+    "PhoneNumberConfirmed" INTEGER NOT NULL,
+    "TwoFactorEnabled" INTEGER NOT NULL,
+    "LockoutEnd" TEXT NULL,
+    "LockoutEnabled" INTEGER NOT NULL,
+    "AccessFailedCount" INTEGER NOT NULL
+);
+2026-09-29 13:24:51.981 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "Users" (
+    "id" INTEGER NOT NULL CONSTRAINT "PK_Users" PRIMARY KEY AUTOINCREMENT,
+    "DisplayName" TEXT NOT NULL,
+    "password_hash" TEXT NOT NULL
+);
+2026-09-29 13:24:51.982 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "AspNetRoleClaims" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_AspNetRoleClaims" PRIMARY KEY AUTOINCREMENT,
+    "RoleId" TEXT NOT NULL,
+    "ClaimType" TEXT NULL,
+    "ClaimValue" TEXT NULL,
+    CONSTRAINT "FK_AspNetRoleClaims_AspNetRoles_RoleId" FOREIGN KEY ("RoleId") REFERENCES "AspNetRoles" ("Id") ON DELETE CASCADE
+);
+2026-09-29 13:24:51.983 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "AspNetUserClaims" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_AspNetUserClaims" PRIMARY KEY AUTOINCREMENT,
+    "UserId" TEXT NOT NULL,
+    "ClaimType" TEXT NULL,
+    "ClaimValue" TEXT NULL,
+    CONSTRAINT "FK_AspNetUserClaims_AspNetUsers_UserId" FOREIGN KEY ("UserId") REFERENCES "AspNetUsers" ("Id") ON DELETE CASCADE
+);
+2026-09-29 13:24:51.983 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "AspNetUserLogins" (
+    "LoginProvider" TEXT NOT NULL,
+    "ProviderKey" TEXT NOT NULL,
+    "ProviderDisplayName" TEXT NULL,
+    "UserId" TEXT NOT NULL,
+    CONSTRAINT "PK_AspNetUserLogins" PRIMARY KEY ("LoginProvider", "ProviderKey"),
+    CONSTRAINT "FK_AspNetUserLogins_AspNetUsers_UserId" FOREIGN KEY ("UserId") REFERENCES "AspNetUsers" ("Id") ON DELETE CASCADE
+);
+2026-09-29 13:24:51.984 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "AspNetUserRoles" (
+    "UserId" TEXT NOT NULL,
+    "RoleId" TEXT NOT NULL,
+    CONSTRAINT "PK_AspNetUserRoles" PRIMARY KEY ("UserId", "RoleId"),
+    CONSTRAINT "FK_AspNetUserRoles_AspNetRoles_RoleId" FOREIGN KEY ("RoleId") REFERENCES "AspNetRoles" ("Id") ON DELETE CASCADE,
+    CONSTRAINT "FK_AspNetUserRoles_AspNetUsers_UserId" FOREIGN KEY ("UserId") REFERENCES "AspNetUsers" ("Id") ON DELETE CASCADE
+);
+2026-09-29 13:24:51.985 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "AspNetUserTokens" (
+    "UserId" TEXT NOT NULL,
+    "LoginProvider" TEXT NOT NULL,
+    "Name" TEXT NOT NULL,
+    "Value" TEXT NULL,
+    CONSTRAINT "PK_AspNetUserTokens" PRIMARY KEY ("UserId", "LoginProvider", "Name"),
+    CONSTRAINT "FK_AspNetUserTokens_AspNetUsers_UserId" FOREIGN KEY ("UserId") REFERENCES "AspNetUsers" ("Id") ON DELETE CASCADE
+);
+2026-09-29 13:24:51.986 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "Quizzes" (
+    "id" INTEGER NOT NULL CONSTRAINT "PK_Quizzes" PRIMARY KEY AUTOINCREMENT,
+    "user_id" INTEGER NULL,
+    "title" TEXT NULL,
+    CONSTRAINT "FK_Quizzes_Users_user_id" FOREIGN KEY ("user_id") REFERENCES "Users" ("id") ON DELETE SET NULL
+);
+2026-09-29 13:24:51.987 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "Histories" (
+    "id" INTEGER NOT NULL CONSTRAINT "PK_Histories" PRIMARY KEY AUTOINCREMENT,
+    "user_id" INTEGER NULL,
+    "quiz_id" INTEGER NULL,
+    "completed_at" TEXT NULL,
+    "score" INTEGER NULL,
+    CONSTRAINT "FK_Histories_Quizzes_quiz_id" FOREIGN KEY ("quiz_id") REFERENCES "Quizzes" ("id") ON DELETE RESTRICT,
+    CONSTRAINT "FK_Histories_Users_user_id" FOREIGN KEY ("user_id") REFERENCES "Users" ("id") ON DELETE RESTRICT
+);
+2026-09-29 13:24:51.988 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "Questions" (
+    "id" INTEGER NOT NULL CONSTRAINT "PK_Questions" PRIMARY KEY AUTOINCREMENT,
+    "quiz_id" INTEGER NULL,
+    "type_id" INTEGER NULL,
+    "title" TEXT NULL,
+    "content" json NULL,
+    CONSTRAINT "FK_Questions_Quizzes_quiz_id" FOREIGN KEY ("quiz_id") REFERENCES "Quizzes" ("id") ON DELETE CASCADE
+);
+2026-09-29 13:24:51.989 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_AspNetRoleClaims_RoleId" ON "AspNetRoleClaims" ("RoleId");
+2026-09-29 13:24:51.990 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX "RoleNameIndex" ON "AspNetRoles" ("NormalizedName");
+2026-09-29 13:24:51.991 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_AspNetUserClaims_UserId" ON "AspNetUserClaims" ("UserId");
+2026-09-29 13:24:51.992 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_AspNetUserLogins_UserId" ON "AspNetUserLogins" ("UserId");
+2026-09-29 13:24:51.993 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_AspNetUserRoles_RoleId" ON "AspNetUserRoles" ("RoleId");
+2026-09-29 13:24:51.994 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "EmailIndex" ON "AspNetUsers" ("NormalizedEmail");
+2026-09-29 13:24:51.995 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX "UserNameIndex" ON "AspNetUsers" ("NormalizedUserName");
+2026-09-29 13:24:51.996 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_Histories_quiz_id" ON "Histories" ("quiz_id");
+2026-09-29 13:24:51.997 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_Histories_user_id" ON "Histories" ("user_id");
+2026-09-29 13:24:51.998 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_Questions_quiz_id" ON "Questions" ("quiz_id");
+2026-09-29 13:24:51.999 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_Quizzes_user_id" ON "Quizzes" ("user_id");
+2026-09-29 13:24:52.106 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "Users" AS "u")
+2026-09-29 13:24:52.188 +02:00 [INF] Executed DbCommand (2ms) [Parameters=[@p0='?' (Size = 12), @p1='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Users" ("DisplayName", "password_hash")
+VALUES (@p0, @p1)
+RETURNING "id";
+2026-09-29 13:24:52.196 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 15), @p1='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Users" ("DisplayName", "password_hash")
+VALUES (@p0, @p1)
+RETURNING "id";
+2026-09-29 13:24:52.209 +02:00 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-09-29 13:24:52.229 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT "u"."id", "u"."DisplayName", "u"."password_hash"
+FROM "Users" AS "u"
+LIMIT 1
+2026-09-29 13:24:52.240 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT "u"."id", "u"."DisplayName", "u"."password_hash"
+FROM "Users" AS "u"
+ORDER BY "u"."id" DESC
+LIMIT 1
+2026-09-29 13:24:52.243 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "Quizzes" AS "q")
+2026-09-29 13:24:52.265 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 5), @p1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Quizzes" ("title", "user_id")
+VALUES (@p0, @p1)
+RETURNING "id";
+2026-09-29 13:24:52.267 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (Size = 9), @p1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Quizzes" ("title", "user_id")
+VALUES (@p0, @p1)
+RETURNING "id";
+2026-09-29 13:24:52.287 +02:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*) FROM "sqlite_master" WHERE "type" = 'table' AND "rootpage" IS NOT NULL;
+2026-09-29 13:24:52.344 +02:00 [INF] User profile is available. Using 'C:\Users\LeonE\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-09-29 13:24:52.423 +02:00 [INF] Now listening on: http://localhost:5172
+2026-09-29 13:24:52.425 +02:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-09-29 13:24:52.425 +02:00 [INF] Hosting environment: Development
+2026-09-29 13:24:52.426 +02:00 [INF] Content root path: C:\Users\LeonE\Desktop\GitHub\ITPE3200-1-26H\gremlin
+2026-09-29 13:24:56.096 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5172/user/update - null null
+2026-09-29 13:24:56.101 +02:00 [WRN] Failed to determine the https port for redirect.
+2026-09-29 13:24:56.207 +02:00 [INF] Executing endpoint 'Gremlin.Controllers.UserController.Update (Gremlin)'
+2026-09-29 13:24:56.216 +02:00 [INF] Route matched with {action = "Update", controller = "User", page = "", area = ""}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Update() on controller Gremlin.Controllers.UserController (Gremlin).
+2026-09-29 13:24:56.226 +02:00 [INF] Executing ViewResult, running view Update.
+2026-09-29 13:24:56.326 +02:00 [INF] Executed ViewResult - view Update executed in 101.538ms.
+2026-09-29 13:24:56.327 +02:00 [INF] Executed action Gremlin.Controllers.UserController.Update (Gremlin) in 108.9162ms
+2026-09-29 13:24:56.329 +02:00 [INF] Executed endpoint 'Gremlin.Controllers.UserController.Update (Gremlin)'
+2026-09-29 13:24:56.334 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5172/user/update - 200 null text/html; charset=utf-8 239.1024ms
+2026-09-29 13:25:52.701 +02:00 [INF] Request starting HTTP/1.1 GET http://localhost:5172/User/Details - null null
+2026-09-29 13:25:52.711 +02:00 [INF] Request finished HTTP/1.1 GET http://localhost:5172/User/Details - 404 0 null 10.1889ms
+2026-09-29 13:25:52.717 +02:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5172/User/Details, Response status code: 404
+2026-09-29 13:26:20.010 +02:00 [INF] Application is shutting down...

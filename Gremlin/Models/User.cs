@@ -1,14 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 
 namespace Gremlin.Models;
 
-public class User
+public class User: IdentityUser
 {
-    public int id {get; set;}
     [Required]
-    public string display_name {get; set;} = string.Empty;
-    [Required]
-    public string password_hash {get; set;} = string.Empty;
+    public string DisplayName {get; set;} = string.Empty;
 
     // Navigation properties
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>();

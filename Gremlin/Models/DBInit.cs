@@ -15,15 +15,23 @@ public static class DBInit
         {
             var users = new List<User>
             {
-                new User {display_name = "Harry potter"},
-                new User {display_name = "Jean Luc Picard"}
+                new User {
+                    Email = "harry.potter@hogwarts.co.uk",
+                    DisplayName = "Harry potter",
+                    PasswordHash = "12345"
+                    },
+                new User {
+                    Email = "J.L.Picard@ufp.org",
+                    DisplayName = "Jean Luc Picard",
+                    PasswordHash = "12345"
+                    }
             };
             context.Users.AddRange(users);
             context.SaveChanges();
         }
 
         var defaultUser = context.Users.First();
-        var defaultUser2 = context.Users.OrderBy(u => u.id).Last();
+        var defaultUser2 = context.Users.OrderBy(u => u.Id).Last();
 
         if (!context.Quizzes.Any())
         {
@@ -32,11 +40,11 @@ public static class DBInit
                 new Quiz
                 {
                     title = "Pizza",
-                    user_id = defaultUser.id
+                    user_id = defaultUser.Id
                 },new Quiz
                 {
                     title = "Hamburger",
-                    user_id = defaultUser2.id
+                    user_id = defaultUser2.Id
                 },
             };
             context.Quizzes.AddRange(quizzes);

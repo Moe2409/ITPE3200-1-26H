@@ -1,10 +1,10 @@
 @model Gremlin.ViewModels.UserViewModel
 
 @{
-    ViewData["Title"] = Model.User.display_name ?? "User Profile";
+    ViewData["Title"] = Model.User.DisplayName ?? "User Profile";
 }
 
-<h2>User Profile: @(Model.User.display_name ?? $"User #{Model.User.id}")</h2>
+<h2>User Profile: @(Model.User.DisplayName ?? $"User #{Model.User.Id}")</h2>
 
 <hr />
 

@@ -1,6 +1,7 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Gremlin.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,16 +14,32 @@ builder.Services.AddDbContext<GremlinDbContext>(options =>
         builder.Configuration["ConnectionStrings:GremlinDbContextConnection"]
     );
 });
+//adding logging for errorhandling
+builder.Services.AddSerilog((services, loggerConfiguration) =>
+{
+    loggerConfiguration
+        .MinimumLevel.Information()
+        .WriteTo.Console()
+        .WriteTo.File($"Logs/app_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+});
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.Cookie.Name = "GremlinAuthCookie";
-        options.LoginPath = "/user/login";
-        options.AccessDeniedPath = "/user/accessDenied";
-        options.ExpireTimeSpan = TimeSpan.FromDays(7);
-        options.SlidingExpiration = true;
-    });
+builder.Services.AddDefaultIdentity<User>( options =>
+{
+ options.SignIn.RequireConfirmedAccount = false;   
+}).AddEntityFrameworkStores<GremlinDbContext>();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/Login";
+});
+
+builder.Services.AddSession(options => {
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 var app = builder.Build();
 
@@ -54,6 +71,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
+app.UseSession();
 
 app.MapDefaultControllerRoute();
 

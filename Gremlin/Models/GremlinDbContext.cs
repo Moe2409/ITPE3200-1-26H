@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Gremlin.Models;
 
 
-public class GremlinDbContext : IdentityDbContext
+public class GremlinDbContext : IdentityDbContext<User>
 {
     public GremlinDbContext(DbContextOptions<GremlinDbContext> options) : base(options)
     {
