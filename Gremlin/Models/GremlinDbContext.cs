@@ -1,9 +1,10 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gremlin.Models;
 
 
-public class GremlinDbContext : DbContext
+public class GremlinDbContext : IdentityDbContext
 {
     public GremlinDbContext(DbContextOptions<GremlinDbContext> options) : base(options)
     {
