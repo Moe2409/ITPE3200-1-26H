@@ -1,12 +1,13 @@
 using Gremlin.Models;
 namespace Gremlin.ViewModels;
 
+
 public class TakequizViewModel
 {
     public int QuizId { get; set; }
     public string? QuizTitle { get; set; }
     
-    
+    public List<QuestionViewModel> Questions { get; set; } = new();
 }
 public class QuestionViewModel
 {

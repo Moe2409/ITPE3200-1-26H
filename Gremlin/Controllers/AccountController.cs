@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Gremlin.ViewModels;
 using Gremlin.Models;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Gremlin.Controllers;
 
@@ -135,7 +136,7 @@ public class AccountController : Controller
     }
 
     
-    [HttpGet]
+    [HttpGet("update")]
     [Authorize]
     public async Task<IActionResult> Update()
     {
@@ -149,7 +150,7 @@ public class AccountController : Controller
 
             var model = new UpdateAccountViewModel
             {
-                UserName = user.UserName,
+                UserName = user.UserName ?? string.Empty,
                 Email = user.Email ?? string.Empty
             };
 
@@ -163,7 +164,7 @@ public class AccountController : Controller
     }
 
     
-    [HttpPost]
+    [HttpPost("update")]
     [Authorize]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Update(UpdateAccountViewModel model)
@@ -181,28 +182,36 @@ public class AccountController : Controller
                 return NotFound("User not found.");
             }
 
-            user.UserName = model.UserName;
-
-            if (user.Email != model.Email)
+            if (user.UserName != model.UserName)
             {
-                user.Email = model.Email;
-                user.UserName = model.Email;
+                var setUserNameResult = await _userManager.SetUserNameAsync(user, model.UserName);
+                if (!setUserNameResult.Succeeded)
+                {
+                    foreach (var error in setUserNameResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                    return View(model);
+                }
             }
-
-            var result = await _userManager.UpdateAsync(user);
-            if (result.Succeeded)
+            
+            if (!string.IsNullOrEmpty(model.Password))
             {
-                await _signInManager.RefreshSignInAsync(user);
-                _logger.LogInformation("User account updated successfully.");
-                
-                TempData["StatusMessage"] = "Your profile has been updated.";
-                return RedirectToAction(nameof(Update));
+                var changePasswordResult = await _userManager.ChangePasswordAsync(user, model.Password, model.Password);
+                if (!changePasswordResult.Succeeded)
+                {
+                    foreach (var error in changePasswordResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                    return View(model);
+                }
             }
+            await _signInManager.RefreshSignInAsync(user);
+            _logger.LogInformation("User account updated successfully.");
 
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
+            TempData["StatusMessage"] = "Profilen din har blitt oppdatert.";
+            return RedirectToAction("Index", "Home");
         }
         catch (Exception ex)
         {

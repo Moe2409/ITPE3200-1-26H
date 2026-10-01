@@ -10,7 +10,7 @@ public class UpdateAccountViewModel
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
 
-    [Required]
     [DataType(DataType.Password)]
+    [Display(Name = "New Password")]
     public string Password { get; set; } = string.Empty;
 }
