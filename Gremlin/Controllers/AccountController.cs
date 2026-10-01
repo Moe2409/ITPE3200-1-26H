@@ -151,7 +151,6 @@ public class AccountController : Controller
             var model = new UpdateAccountViewModel
             {
                 UserName = user.UserName ?? string.Empty,
-                Email = user.Email ?? string.Empty
             };
 
             return View(model);
@@ -195,12 +194,24 @@ public class AccountController : Controller
                 }
             }
             
-            if (!string.IsNullOrEmpty(model.Password))
+            if (!string.IsNullOrWhiteSpace(model.Password))
             {
-                var changePasswordResult = await _userManager.ChangePasswordAsync(user, model.Password, model.Password);
-                if (!changePasswordResult.Succeeded)
+                var removeResult = await _userManager.RemovePasswordAsync(user);
+                if (removeResult.Succeeded)
                 {
-                    foreach (var error in changePasswordResult.Errors)
+                    var addPasswordResult = await _userManager.AddPasswordAsync(user, model.Password);
+                    if (!addPasswordResult.Succeeded)
+                    {
+                        foreach (var error in addPasswordResult.Errors)
+                        {
+                            ModelState.AddModelError(string.Empty, error.Description);
+                        }
+                        return View(model);
+                    }
+                }
+                else
+                {
+                    foreach (var error in removeResult.Errors)
                     {
                         ModelState.AddModelError(string.Empty, error.Description);
                     }
