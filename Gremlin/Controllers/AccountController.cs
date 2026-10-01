@@ -1,30 +1,35 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Gremlin.ViewModels;
 using Gremlin.Models;
 
 namespace Gremlin.Controllers;
 
+[Route("account")]
 public class AccountController : Controller
 {
-    private readonly UserManager<User> _userManager;
-    private readonly SignInManager<User> _signInManager;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly SignInManager<IdentityUser> _signInManager;
+
+    private readonly GremlinDbContext _context;
     private readonly ILogger<AccountController> _logger;
 
-    public AccountController(UserManager<User> userManager, SignInManager<User> signInManager, ILogger<AccountController> logger)
+    public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, GremlinDbContext context, ILogger<AccountController> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _context = context;
         _logger = logger;
     }
 
     
-    [HttpGet]
+    [HttpGet("register")]
     public IActionResult Register() => View();
 
     
-    [HttpPost]
+    [HttpPost("register")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
@@ -35,7 +40,7 @@ public class AccountController : Controller
 
         try
         {
-            var user = new User { UserName = model.Email, Email = model.Email };
+            var user = new IdentityUser { UserName = model.UserName, Email = model.Email };
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (result.Succeeded)
@@ -60,7 +65,7 @@ public class AccountController : Controller
     }
 
     
-    [HttpGet]
+    [HttpGet("login")]
     public IActionResult Login(string? returnUrl = null)
     {
         var model = new LoginViewModel { ReturnUrl = returnUrl };
@@ -68,7 +73,7 @@ public class AccountController : Controller
     }
 
     
-    [HttpPost]
+    [HttpPost("login")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
@@ -144,7 +149,7 @@ public class AccountController : Controller
 
             var model = new UpdateAccountViewModel
             {
-                DisplayName = user.DisplayName,
+                UserName = user.UserName,
                 Email = user.Email ?? string.Empty
             };
 
@@ -176,7 +181,7 @@ public class AccountController : Controller
                 return NotFound("User not found.");
             }
 
-            user.DisplayName = model.DisplayName;
+            user.UserName = model.UserName;
 
             if (user.Email != model.Email)
             {
@@ -258,5 +263,35 @@ public class AccountController : Controller
         }
 
         return View();
+    }
+
+    [HttpGet("{UserName}")]
+    public async Task<IActionResult> Profile(string UserName)
+    {
+        if (string.IsNullOrEmpty(UserName))
+        {
+            return NotFound();
+        }
+
+        var user = await _userManager.FindByNameAsync(UserName);
+
+        if (user == null)
+        {
+            return NotFound($"User with username '{UserName}' was not found.");
+        }
+
+        var quizzes = await _context.Quizzes
+            .Include(q => q.Questions)
+            .Where(q => q.user_id == user.Id)
+            .ToListAsync();
+
+        var histories = await _context.Histories
+            .Include(h => h.Quiz)
+            .Where(h => h.user_id == user.Id)
+            .ToListAsync();
+
+        var viewModel = new UserViewModel(user, quizzes, histories);
+
+        return View("UserDetails", viewModel);
     }
 }

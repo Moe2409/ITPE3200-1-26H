@@ -1,10 +1,10 @@
 @model Gremlin.ViewModels.UserViewModel
 
 @{
-    ViewData["Title"] = Model.User.DisplayName ?? "User Profile";
+    ViewData["Title"] = Model.User.UserName ?? "User Profile";
 }
 
-<h2>User Profile: @(Model.User.DisplayName ?? $"User #{Model.User.Id}")</h2>
+<h2>User Profile: @(Model.User.UserName ?? $"User #{Model.User.Id}")</h2>
 
 <hr />
 
@@ -55,6 +55,6 @@ else
     </table>
 }
 <p>
-    <a class="btn btn-secondary" asp-controller="User" asp-action="Update">Update</a> 
-    <a class="btn btn-secondary" asp-controller="User" asp-action="Delete">Delete</a> 
+    <a class="btn btn-secondary" asp-controller="Account" asp-action="Update">Update</a> 
+    <a class="btn btn-danger" asp-controller="Account" asp-action="Delete">Delete</a> 
 </p>

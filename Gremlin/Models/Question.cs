@@ -8,7 +8,11 @@ public class Question
     public int? type_id {get; set;}
     public string? title {get; set;}
 
-    public string? content;
+    // Json representaion of question answers
+    // public string? content;  
+
+    public List<string> AnswerAlternatives { get; set; } = new List<string>();
+    public List<int> CorrectAnswerIndices { get; set; } = new List<int>();
 
     // Navigation property
     public Quiz? Quiz { get; set; }

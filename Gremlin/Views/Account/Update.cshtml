@@ -1,0 +1,18 @@
+@model Gremlin.ViewModels.UpdateAccountViewModel
+<h2>Update</h2>
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Update" method="post">
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

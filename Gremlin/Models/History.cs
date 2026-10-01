@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 namespace Gremlin.Models;
 
 public class History
@@ -10,6 +11,6 @@ public class History
     public int? score {get; set;}
 
     // Navigation properties
-    public User? User { get; set; }
+    public IdentityUser? User { get; set; }
     public Quiz? Quiz { get; set; }
 }

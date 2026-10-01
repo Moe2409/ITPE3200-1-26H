@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gremlin.Models;
 
 
-public class GremlinDbContext : IdentityDbContext<User>
+public class GremlinDbContext : IdentityDbContext
 {
     public GremlinDbContext(DbContextOptions<GremlinDbContext> options) : base(options)
     {
@@ -13,21 +14,15 @@ public class GremlinDbContext : IdentityDbContext<User>
     public DbSet<History> Histories { get; set; }
     public DbSet<Question> Questions { get; set; }
     public DbSet<Quiz> Quizzes { get; set; }
-    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Map JsonElement column to JSON type
-        modelBuilder.Entity<Question>()
-            .Property(q => q.content)
-            .HasColumnType("json");
-
-        // fk_User_id_Quiz
+        // Make sure UserName is unique
         modelBuilder.Entity<Quiz>()
             .HasOne(q => q.User)
-            .WithMany(u => u.Quizzes)
+            .WithMany()
             .HasForeignKey(q => q.user_id)
             .OnDelete(DeleteBehavior.SetNull);
 
@@ -41,7 +36,7 @@ public class GremlinDbContext : IdentityDbContext<User>
         // fk_User_id_History
         modelBuilder.Entity<History>()
             .HasOne(h => h.User)
-            .WithMany(u => u.Histories)
+            .WithMany()
             .HasForeignKey(h => h.user_id)
             .OnDelete(DeleteBehavior.Restrict);
 

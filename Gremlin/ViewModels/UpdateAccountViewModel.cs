@@ -3,10 +3,14 @@ namespace Gremlin.ViewModels;
 public class UpdateAccountViewModel
 {
     [Required]
-    [Display(Name = "Display Name")]
-    public string DisplayName { get; set; } = string.Empty;
+    [Display(Name = "Name")]
+    public string UserName { get; set; } = string.Empty;
 
     [Required]
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [DataType(DataType.Password)]
+    public string Password { get; set; } = string.Empty;
 }
