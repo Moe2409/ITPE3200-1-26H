@@ -1,7 +1,7 @@
 @model Gremlin.ViewModels.QuizzesViewModel
 
 <div class="container my-5">
-    <!-- Page Header -->
+    
     <div class="row mb-4 align-items-center">
         <div class="col">
             <h1 class="h3 fw-bold text-dark mb-1">Available Quizzes</h1>
@@ -14,7 +14,7 @@
         </div>
     </div>
 
-    <!-- Empty State Check -->
+   
     @if (Model.Quizzes == null || !Model.Quizzes.Any())
     {
         <div class="card shadow-sm border-0 rounded-4 p-5 text-center bg-light">
@@ -43,9 +43,9 @@
                         @foreach (var quiz in Model.Quizzes)
                         {
                             <tr>
-                                <!-- Quiz Title links to Details page -->
+                                <!-- Quiz Title links to Take page -->
                                 <td class="ps-4 fw-semibold">
-                                    <a asp-controller="Quiz" asp-action="Details" asp-route-id="@quiz.id" class="text-decoration-none text-dark stretched-link">
+                                    <a asp-controller="Quiz" asp-action="Take" asp-route-id="@quiz.id" class="text-decoration-none text-dark stretched-link">
                                         @quiz.title
                                     </a>
                                 </td>

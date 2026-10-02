@@ -19,7 +19,7 @@
             <form asp-controller="Quiz" asp-action="Submit" asp-route-QuizId="@Model.QuizId" method="post">
                 @Html.AntiForgeryToken()
 
-                <!-- Preserve main Quiz ID in POST model binding -->
+                
                 <input type="hidden" asp-for="QuizId" />
                 <input type="hidden" asp-for="QuizTitle" />
 

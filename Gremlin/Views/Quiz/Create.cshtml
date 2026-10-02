@@ -1,15 +1,92 @@
-@model Quiz
+@model Gremlin.ViewModels.CreateQuizViewModel
 
 <h2>Create New Quiz</h2>
-<form asp-action="Create">
+
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Title" class="form-label font-weight-bold">Quiz Title</label><span class="text-danger">*</span>
+        <input asp-for="Title" class="form-control" placeholder="Enter quiz title..." />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <hr class="my-4" />
+
+    <div id="questionsContainer">
+        <!-- Dynamic questions gets added here -->
+    </div>
+
+    <div class="mb-3">
+        <button type="button" id="addQuestionBtn" class="btn btn-outline-primary">
+            + Add Question
+        </button>
+    </div>
+
     <div class="form-group">
-        <label asp-for="title"></label><span class="text-danger">*</span>
-        <input asp-for="title" class="form-control" />
-        <span asp-validation-for="title" class="text-danger"></span>
+        <button type="submit" class="btn btn-success btn-lg">Save Quiz</button>
+        <a asp-action="Table" class="btn btn-secondary">Cancel</a>
     </div>
 </form>
 
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <!-- Using javascript to dynamicaly add questions while making the quiz -->
+    <script>
+        let questionIndex = 0;
+
+        function addQuestion() {
+            const qIndex = questionIndex++;
+            const container = document.getElementById('questionsContainer');
+
+            const card = document.createElement('div');
+            card.className = 'card mb-3 question-card';
+            card.dataset.qIndex = qIndex;
+
+            card.innerHTML = `
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title">Question ${qIndex + 1}</h5>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.question-card').remove()">Remove question</button>
+                    </div>
+                    <div class="form-group mb-3">
+                        <input name="Questions[${qIndex}].Title" class="form-control" placeholder="Write question here..." required />
+                    </div>
+                    <h6>Answer options (choose the right answer)</h6>
+                    <div class="options-container" id="options-${qIndex}"></div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addOption(${qIndex})">+ Add alternativ</button>
+                </div>
+            `;
+
+            container.appendChild(card);
+            
+            // Adding two standard alternatives per question
+            addOption(qIndex);
+            addOption(qIndex);
+        }
+
+        function addOption(qIndex) {
+            const optionsContainer = document.getElementById(`options-${qIndex}`);
+            const oIndex = optionsContainer.children.length;
+
+            const optRow = document.createElement('div');
+            optRow.className = 'input-group mb-2';
+
+            optRow.innerHTML = `
+                <div class="input-group-text">
+                    <input class="form-check-input mt-0" type="radio" name="Questions[${qIndex}].CorrectAnswerIndex" value="${oIndex}" ${oIndex === 0 ? 'checked' : ''} title="Mark right answer" />
+                </div>
+                <input type="text" name="Questions[${qIndex}].AnswerAlternatives[${oIndex}]" class="form-control" placeholder="Alternativ ${oIndex + 1}" required />
+                <button type="button" class="btn btn-outline-danger" onclick="this.closest('.input-group').remove()">&times;</button>
+            `;
+
+            optionsContainer.appendChild(optRow);
+        }
+
+        document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
+
+        // Adding one deafult question layout
+        addQuestion();
+    </script>
 }

@@ -191,43 +191,59 @@ public class QuizController : Controller
     }
 
     // Renders the view for creating a new quiz.
-    [HttpGet]
-    public IActionResult Create()
+    [HttpGet("create")]
+    [Authorize]
+        public IActionResult Create()
     {
-        return View();
+        return View(new CreateQuizViewModel());
     }
 
-    // Handles the form submission for creating a new quiz entity
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult Create(Quiz quiz)
+   // Handles the form submission for creating a new quiz entity
+[HttpPost("create")]
+[Authorize]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Create(CreateQuizViewModel vm)
+{
+    // Return view with validation errors if model state validation fails
+    if (!ModelState.IsValid)
     {
-        // Return view with validation errors if model state validation fails
-        if (!ModelState.IsValid)
-        {
-            return View(quiz);
-        }
-
-        try
-        {
-            _gremlinDbContext.Quizzes.Add(quiz);
-            _gremlinDbContext.SaveChanges();
-            TempData["SuccessMessage"] = "Quiz created successfully!";
-            return RedirectToAction(nameof(Table));
-        }
-        catch (DbUpdateException dbEx)
-        {
-            // Catch specific database context
-            _logger.LogError(dbEx, "A database error occurred while creating a new quiz.");
-            ModelState.AddModelError("", "A database error occurred while saving. Please check your inputs and try again.");
-        }
-        catch (Exception ex)
-        {
-            // Catch all other unexpected execution errors
-            _logger.LogError(ex, "An unexpected error occurred while creating a new quiz.");
-            ModelState.AddModelError("", "An unexpected error occurred. Please try again later.");
-        }
-
-        return View(quiz);
+        return View(vm);
     }
+
+    try
+    {
+        // 2. Retrieve the ID of the currently authenticated user
+        var userId = _userManager.GetUserId(User);
+
+        var quiz = new Quiz
+        {
+            // 3. Map the view model data to the Quiz entity and its questions
+            title = vm.Title,
+            user_id = userId,
+            Questions = vm.Questions.Select(q => new Question
+            {
+                title = q.Title,
+                // Filter out empty or whitespace-only answer alternatives
+                AnswerAlternatives = q.AnswerAlternatives.Where(a => !string.IsNullOrWhiteSpace(a)).ToList(),
+                CorrectAnswerIndices = new List<int> { q.CorrectAnswerIndex }
+            }).ToList()
+        };
+        // 4. Add the new quiz to the database context and save changes
+        _gremlinDbContext.Quizzes.Add(quiz);
+        await _gremlinDbContext.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Quiz created successfully!";
+        return RedirectToAction(nameof(Table));
+    }
+    catch (Exception ex)
+    {
+        var userId = _userManager.GetUserId(User);
+
+        _logger.LogError(ex, "An error occurred while creating a quiz for user ID: {UserId}", userId);
+        ModelState.AddModelError(string.Empty, "An unexpected error occurred while saving the quiz. Please try again later.");
+
+        // 3. Return the view with the current view model so the user doesn't lose their input
+        return View(vm);
+    }
+}
 }
