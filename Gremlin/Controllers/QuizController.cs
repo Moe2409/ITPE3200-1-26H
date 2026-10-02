@@ -2,23 +2,31 @@ using Microsoft.AspNetCore.Mvc;
 using Gremlin.Models;
 using Gremlin.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace Gremlin.Controllers;
 
+[Route("quiz")]
 public class QuizController : Controller
 {
     private readonly ILogger<QuizController> _logger;
     private readonly GremlinDbContext _gremlinDbContext;
+    private readonly UserManager<IdentityUser> _userManager;
 
-    public QuizController(GremlinDbContext gremlinDbContext, ILogger<QuizController> logger)
+    public QuizController(
+        GremlinDbContext gremlinDbContext, 
+        ILogger<QuizController> logger,
+        UserManager<IdentityUser> userManager)
     {
         _gremlinDbContext = gremlinDbContext;
         _logger = logger;
+        _userManager = userManager;
     }
     
     
 
-    [HttpGet("quizzes/all")]
+    [HttpGet("all")]
     public IActionResult Table()
     {
         try
@@ -39,7 +47,7 @@ public class QuizController : Controller
         }
     }
 
-   [HttpGet("quizzes/{id:int}")]
+   [HttpGet("{id:int}")]
     public IActionResult Details(int id)
     {
         try
@@ -65,19 +73,22 @@ public class QuizController : Controller
         }
     }
 
-     [HttpGet("quiz/{id:int}")]
+     [HttpGet("{id:int}/take")]
+    [Authorize] 
     public IActionResult Take(int id)
     {
         try
         {
-            var quiz=_gremlinDbContext.Quizzes
-                .Include(q=> q.Questions)
-                .FirstOrDefault(q=> q.id==id);
+            var quiz = _gremlinDbContext.Quizzes
+                .Include(q => q.Questions)
+                .FirstOrDefault(q => q.id == id);
+                
             if (quiz == null)
             {
                 _logger.LogWarning("Quiz with ID {QuizId} was not found for taking.", id);
                 return NotFound();
             }
+            
             var viewModel = new TakequizViewModel
             {
                 QuizId = quiz.id,
@@ -91,58 +102,77 @@ public class QuizController : Controller
             };
 
             return View(viewModel);
-
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while loading quiz ID {QuizId} for taking.", id);
             return StatusCode(500, "An internal server error occurred.");
         }
-        
     }
 
-   [HttpPost("quizzes/submit")]
-    [ValidateAntiForgeryToken]
-    public IActionResult Submit(TakequizViewModel model)
+[HttpPost("{QuizId:int}/submit")]
+[Authorize] // Ensures the user is signed in
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Submit(TakequizViewModel model)
+{
+    try 
     {
-        try //errorhandling
+        // Line 118: await is now valid inside async Task<IActionResult>
+        var quiz = await _gremlinDbContext.Quizzes
+            .Include(q => q.Questions)
+            .FirstOrDefaultAsync(q => q.id == model.QuizId);
+
+        if (quiz == null)
         {
-            var quiz = _gremlinDbContext.Quizzes
-                .Include(q => q.Questions)
-                .FirstOrDefault(q => q.id == model.QuizId);
+            return NotFound();
+        }
 
-            if (quiz == null)
-            {
-                return NotFound();
-            }
-            //score counter and score count
-            int score = 0;
-            int totalQuestions = quiz.Questions.Count;
-            //loopthat loops through the questions and checks correct answers.
-            foreach (var submittedQ in model.Questions)
-            {
-                var dbQuestion = quiz.Questions.FirstOrDefault(q => q.id == submittedQ.QuestionId);
+        // 1. Calculate Score
+        int score = 0;
+        int totalQuestions = quiz.Questions.Count;
 
-                if (dbQuestion != null && submittedQ.SelectedAnswerIndex.HasValue)
-                {   //if that checks if the answer is correct and increases score based on that.
-                    if (dbQuestion.CorrectAnswerIndices != null && 
-                        dbQuestion.CorrectAnswerIndices.Contains(submittedQ.SelectedAnswerIndex.Value))
-                    {
-                        score++;
-                    }
+        foreach (var submittedQ in model.Questions)
+        {
+            var dbQuestion = quiz.Questions.FirstOrDefault(q => q.id == submittedQ.QuestionId);
+
+            if (dbQuestion != null && submittedQ.SelectedAnswerIndex.HasValue)
+            {   
+                if (dbQuestion.CorrectAnswerIndices != null && 
+                    dbQuestion.CorrectAnswerIndices.Contains(submittedQ.SelectedAnswerIndex.Value))
+                {
+                    score++;
                 }
             }
-            //gives u a message with score and total score possible. 
-            TempData["SuccessMessage"] = $"Quiz submitted! You got {score} out of {totalQuestions} correct.";
-            return RedirectToAction(nameof(Table));
         }
-        catch (Exception ex)  //catcher feil og kaster error melding
+
+        // 2. Get Current Logged-In User ID
+        var userId = _userManager.GetUserId(User);
+
+        // 3. Create & Save History Record
+        var history = new History
         {
-            _logger.LogError(ex, "An error occurred while submitting quiz ID {QuizId}.", model.QuizId);
-            ModelState.AddModelError("", "An error occurred while submitting your quiz. Please try again.");
-            return View("Take", model);
-        }
+            user_id = userId,
+            quiz_id = quiz.id,
+            score = score,
+            completed_at = DateTime.UtcNow
+        };
+
+        _gremlinDbContext.Histories.Add(history);
+        
+        // Line 158: await is now valid
+        await _gremlinDbContext.SaveChangesAsync();
+
+        // 4. Feedback & Redirect
+        TempData["SuccessMessage"] = $"Quiz submitted! You got {score} out of {totalQuestions} correct.";
+        return RedirectToAction(nameof(Table));
     }
+    catch (Exception ex)  
+    {
+        _logger.LogError(ex, "An error occurred while submitting quiz ID {QuizId}.", model.QuizId);
+        ModelState.AddModelError("", "An error occurred while submitting your quiz. Please try again.");
+        return View("Take", model);
+    }
+}
 
    
     

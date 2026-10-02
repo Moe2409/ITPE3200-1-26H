@@ -51,7 +51,7 @@ public static class DBInit
             }
         }
 
-        var defaultUser = context.Users.First();
+        var defaultUser = context.Users.OrderBy(u => u.Id).First();
         var defaultUser2 = context.Users.OrderBy(u => u.Id).Last();
 
         if (!context.Quizzes.Any())

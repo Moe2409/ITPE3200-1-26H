@@ -1,27 +1,86 @@
 @model Gremlin.ViewModels.QuizzesViewModel
 
-<table>
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Questions</th>
-            </tr>   
-        </thead>
-        <tbody>
-            @foreach (var quiz in Model.Quizzes)
-            {
-                <tr>
-                    <td>
-                        <a asp-controller="Quiz"
-                            asp-action="Details"
-                            asp-route-id="@quiz.id">@quiz.id</a>
-                    </td> 
-                    <td>@quiz.title</td>
-                    <td>@(quiz.User?.UserName ?? "Unknown")</td>
-                    <td>@(quiz.Questions?.Count ?? 0)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<div class="container my-5">
+    <!-- Page Header -->
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h1 class="h3 fw-bold text-dark mb-1">Available Quizzes</h1>
+            <p class="text-muted mb-0">Browse and test your knowledge with quizzes created by the community.</p>
+        </div>
+        <div class="col-auto">
+            <a asp-controller="Quiz" asp-action="Create" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Create Quiz
+            </a>
+        </div>
+    </div>
+
+    <!-- Empty State Check -->
+    @if (Model.Quizzes == null || !Model.Quizzes.Any())
+    {
+        <div class="card shadow-sm border-0 rounded-4 p-5 text-center bg-light">
+            <div class="card-body">
+                <h4 class="fw-bold text-secondary">No Quizzes Found</h4>
+                <p class="text-muted mb-4">There are no quizzes available right now. Be the first to create one!</p>
+                <a asp-controller="Quiz" asp-action="Create" class="btn btn-primary px-4">Create First Quiz</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Styled Table Card -->
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase fs-7 text-secondary">
+                        <tr>
+                            <th scope="col" class="py-3 ps-4">Title</th>
+                            <th scope="col" class="py-3">Author</th>
+                            <th scope="col" class="py-3 text-center">Questions</th>
+                            <th scope="col" class="py-3 text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var quiz in Model.Quizzes)
+                        {
+                            <tr>
+                                <!-- Quiz Title links to Details page -->
+                                <td class="ps-4 fw-semibold">
+                                    <a asp-controller="Quiz" asp-action="Details" asp-route-id="@quiz.id" class="text-decoration-none text-dark stretched-link">
+                                        @quiz.title
+                                    </a>
+                                </td>
+                                
+                                <!-- Author with a mini avatar placeholder -->
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2 fw-bold" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                            @(quiz.User?.UserName?.Substring(0, 1).ToUpper() ?? "?")
+                                        </div>
+                                        <span class="text-secondary">@(quiz.User?.UserName ?? "Unknown")</span>
+                                    </div>
+                                </td>
+                                
+                                <!-- Questions Badge -->
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                                        @(quiz.Questions?.Count ?? 0) questions
+                                    </span>
+                                </td>
+                                
+                                <!-- Action Button -->
+                                <td class="text-end pe-4 position-relative" style="z-index: 2;">
+                                    <a asp-controller="Quiz"
+                                       asp-action="Take"
+                                       asp-route-id="@quiz.id"
+                                       class="btn btn-sm btn-outline-primary px-4 rounded-pill fw-semibold">
+                                        Take Quiz
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

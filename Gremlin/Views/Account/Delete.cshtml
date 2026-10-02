@@ -1,0 +1,14 @@
+@{
+    ViewData["Title"] = "Slett konto";
+}
+
+<div class="container mt-4">
+    <h2>Slett brukerkonto</h2>
+    <p class="text-danger">Er du sikker på at du vil slette kontoen din? Dette vil slette alle quizer og historikk permanent.</p>
+
+    <form asp-controller="Account" asp-action="DeleteConfirmed" method="post">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-danger">Ja, slett kontoen min nå</button>
+        <a asp-action="Update" class="btn btn-secondary">Avbryt</a>
+    </form>
+</div>

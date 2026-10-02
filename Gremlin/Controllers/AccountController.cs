@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Gremlin.ViewModels;
 using Gremlin.Models;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Transactions;
 
 namespace Gremlin.Controllers;
 
@@ -89,8 +91,16 @@ public class AccountController : Controller
 
         try
         {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                return View(model);
+            }
+
             var result = await _signInManager.PasswordSignInAsync(
-                model.Email, model.Password, model.RememberMe, lockoutOnFailure: true);
+                user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: true
+            );
 
             if (result.Succeeded)
             {
@@ -234,11 +244,11 @@ public class AccountController : Controller
     }
 
     // GET: /Account/Delete
-    [HttpGet]
+    [HttpGet("delete")]
     [Authorize]
     public async Task<IActionResult> Delete()
     {
-        var user = await _userManager.GetUserAsync(User);
+        var user = await _userManager.GetUserAsync(User) ?? (User.Identity?.Name != null ? await _userManager.FindByNameAsync(User.Identity.Name) : null);;
         if (user == null)
         {
             return NotFound("User not found.");
@@ -247,8 +257,7 @@ public class AccountController : Controller
         return View();
     }
 
-    
-    [HttpPost, ActionName("Delete")]
+    [HttpPost("delete")]
     [Authorize]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed()
@@ -256,23 +265,43 @@ public class AccountController : Controller
         try
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null)
+            if (user == null && User.Identity?.Name != null)
             {
+                user = await _userManager.FindByNameAsync(User.Identity.Name);
+            }
+
+            if (user == null)
+            {   
+                _logger.LogWarning("Kunne ikke finne brukeren som forsøker å slette kontoen.");
                 return NotFound("User not found.");
             }
 
-            // Sign out before deleting the account record
-            await _signInManager.SignOutAsync();
+            var quizzes = await _context.Quizzes.Where(q => q.user_id == user.Id).ToListAsync();
+            if (quizzes.Any())
+            {   
+                _context.Quizzes.RemoveRange(quizzes);
+            }
+
+            var histories = await _context.Histories.Where(h => h.user_id == user.Id).ToListAsync();
+            if (histories.Any())
+            {
+                _context.Histories.RemoveRange(histories);
+            }
+
+            await _context.SaveChangesAsync();
 
             var result = await _userManager.DeleteAsync(user);
             if (result.Succeeded)
-            {
-                _logger.LogInformation("User account deleted.");
+            {   
+                // Log out only if deleting was successful
+                await _signInManager.SignOutAsync();
+                _logger.LogInformation("User account deleted successfully.");
                 return RedirectToAction("Index", "Home");
             }
-
+        
             foreach (var error in result.Errors)
-            {
+            {   
+                _logger.LogWarning("Failed to delete user: {Error}", error.Description);    
                 ModelState.AddModelError(string.Empty, error.Description);
             }
         }
@@ -282,7 +311,8 @@ public class AccountController : Controller
             ModelState.AddModelError(string.Empty, "An unexpected error occurred while attempting to delete your account.");
         }
 
-        return View();
+        TempData["ErrorMessage"] = "Kunne ikke slette kontoen. Vennligst prøv igjen.";
+        return RedirectToAction("Update");
     }
 
     [HttpGet("{UserName}")]
