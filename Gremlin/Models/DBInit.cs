@@ -3,21 +3,27 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Gremlin.Models;
 
+// Class for initializing and filling the database with test data (seeding)
 public static class DBInit
-{
+{   
     public static void Seed(IApplicationBuilder app)
     {
+        // Making a scope to resolve scoped services
         using var serviceScope = app.ApplicationServices.CreateScope();
         var services = serviceScope.ServiceProvider;
 
+        // Getting database context and UserManager from ServiceProvider
         var context = services.GetRequiredService<GremlinDbContext>();
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
 
+        // Deleting and creating the database each time the application runs 
+        // Good for testing and development phase
         context.Database.EnsureDeleted();
         context.Database.EnsureCreated();
 
         if (!context.Users.Any())
         {
+            // List with users and their passwords
             var usersWithPasswords = new List<(IdentityUser User, string Password)>
             {
                 (
@@ -38,8 +44,9 @@ public static class DBInit
                     },
                     "Password123!"
                 )
-            };
+            };  
 
+            // Loop to create each user using UserManager, which handles password-hashing
             foreach (var (user, password) in usersWithPasswords)
             {
                 var result = userManager.CreateAsync(user, password).GetAwaiter().GetResult();
@@ -51,9 +58,11 @@ public static class DBInit
             }
         }
 
+        // Getting the first and last user from the database to connect quizzes 
         var defaultUser = context.Users.OrderBy(u => u.Id).First();
         var defaultUser2 = context.Users.OrderBy(u => u.Id).Last();
 
+        // Creating test quizzes
         if (!context.Quizzes.Any())
         {
             var quizzes = new List<Quiz>
@@ -73,6 +82,7 @@ public static class DBInit
             context.SaveChanges();
         }
 
+        // Create a set of sample questions for the sample quiz
         if (!context.Questions.Any())
         {
             var harryPotterFoodQuiz = context.Quizzes.FirstOrDefault(q => q.title == "HarryPotterFood");

@@ -8,5 +8,6 @@ public class UpdateAccountViewModel
 
     [DataType(DataType.Password)]
     [Display(Name = "New Password")]
+    // Making new password is optional
     public string? Password { get; set; } = string.Empty;
 }

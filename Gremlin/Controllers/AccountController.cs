@@ -10,16 +10,22 @@ using System.Transactions;
 
 namespace Gremlin.Controllers;
 
+
+// Controller handling user account operations like login/logout, update, delete and publick userprofiles
 [Route("account")]
 public class AccountController : Controller
 {
     private readonly UserManager<IdentityUser> _userManager;
     private readonly SignInManager<IdentityUser> _signInManager;
-
     private readonly GremlinDbContext _context;
     private readonly ILogger<AccountController> _logger;
 
-    public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, GremlinDbContext context, ILogger<AccountController> logger)
+    
+    public AccountController(
+        UserManager<IdentityUser> userManager, 
+        SignInManager<IdentityUser> signInManager, 
+        GremlinDbContext context, 
+        ILogger<AccountController> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -28,10 +34,13 @@ public class AccountController : Controller
     }
 
     
+    // Displays the user registration view.
     [HttpGet("register")]
     public IActionResult Register() => View();
 
     
+    // Processes the user registration submission.
+
     [HttpPost("register")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(RegisterViewModel model)
@@ -49,10 +58,12 @@ public class AccountController : Controller
             if (result.Succeeded)
             {
                 _logger.LogInformation("User created a new account with password.");
+                // Automatically sign in the user upon successful registration
                 await _signInManager.SignInAsync(user, isPersistent: false);
                 return RedirectToAction("Index", "Home");
             }
 
+            // Map identity errors to the ModelState
             foreach (var error in result.Errors)
             {
                 ModelState.AddModelError(string.Empty, error.Description);
@@ -67,6 +78,8 @@ public class AccountController : Controller
         return View(model);
     }
 
+   
+    // Displays the login view, optionally capturing a return URL for post-login redirection.
     
     [HttpGet("login")]
     public IActionResult Login(string? returnUrl = null)
@@ -76,10 +89,13 @@ public class AccountController : Controller
     }
 
     
+    // Processes the user login form submission and validates credentials.
+   
     [HttpPost("login")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
+        // Safely determine target redirection URL to prevent open redirect vulnerabilities
         string targetUrl = !string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl) 
             ? model.ReturnUrl 
             : Url.Action("Index", "Home") ?? "~/";
@@ -98,6 +114,7 @@ public class AccountController : Controller
                 return View(model);
             }
 
+            // Attempt password sign-in with lockout functionality enabled on failure
             var result = await _signInManager.PasswordSignInAsync(
                 user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: true
             );
@@ -127,6 +144,8 @@ public class AccountController : Controller
     }
 
     
+    // Signs out the currently user.
+    
     [HttpPost("logout")]
     [Authorize]
     [ValidateAntiForgeryToken]
@@ -146,6 +165,8 @@ public class AccountController : Controller
     }
 
     
+    // Displays the account update/settings view for the logged in user.
+   
     [HttpGet("update")]
     [Authorize]
     public async Task<IActionResult> Update()
@@ -172,7 +193,7 @@ public class AccountController : Controller
         }
     }
 
-    
+    // Processes updates to the users account details both password and username.
     [HttpPost("update")]
     [Authorize]
     [ValidateAntiForgeryToken]
@@ -191,6 +212,7 @@ public class AccountController : Controller
                 return NotFound("User not found.");
             }
 
+            // Update username if it has changed
             if (user.UserName != model.UserName)
             {
                 var setUserNameResult = await _userManager.SetUserNameAsync(user, model.UserName);
@@ -204,6 +226,7 @@ public class AccountController : Controller
                 }
             }
             
+            // Update password if a new one is provided
             if (!string.IsNullOrWhiteSpace(model.Password))
             {
                 var removeResult = await _userManager.RemovePasswordAsync(user);
@@ -228,6 +251,8 @@ public class AccountController : Controller
                     return View(model);
                 }
             }
+
+            // Refresh authentication cookie to reflect updated identity data
             await _signInManager.RefreshSignInAsync(user);
             _logger.LogInformation("User account updated successfully.");
 
@@ -243,12 +268,14 @@ public class AccountController : Controller
         return View(model);
     }
 
-    // GET: /Account/Delete
+    // Displays the account deletion confirmation view.
     [HttpGet("delete")]
     [Authorize]
     public async Task<IActionResult> Delete()
     {
-        var user = await _userManager.GetUserAsync(User) ?? (User.Identity?.Name != null ? await _userManager.FindByNameAsync(User.Identity.Name) : null);;
+        var user = await _userManager.GetUserAsync(User) 
+                   ?? (User.Identity?.Name != null ? await _userManager.FindByNameAsync(User.Identity.Name) : null);
+        
         if (user == null)
         {
             return NotFound("User not found.");
@@ -257,6 +284,7 @@ public class AccountController : Controller
         return View();
     }
 
+    // Permanently deletes the user account along with everything else connected with the user.
     [HttpPost("delete")]
     [Authorize]
     [ValidateAntiForgeryToken]
@@ -271,17 +299,19 @@ public class AccountController : Controller
             }
 
             if (user == null)
-            {   
+            { 
                 _logger.LogWarning("Kunne ikke finne brukeren som forsøker å slette kontoen.");
                 return NotFound("User not found.");
             }
 
+            // Clean up related quizzes created by the user
             var quizzes = await _context.Quizzes.Where(q => q.user_id == user.Id).ToListAsync();
             if (quizzes.Any())
-            {   
+            { 
                 _context.Quizzes.RemoveRange(quizzes);
             }
 
+            // Clean up related history entries for the user
             var histories = await _context.Histories.Where(h => h.user_id == user.Id).ToListAsync();
             if (histories.Any())
             {
@@ -290,17 +320,18 @@ public class AccountController : Controller
 
             await _context.SaveChangesAsync();
 
+            // Delete the user account
             var result = await _userManager.DeleteAsync(user);
             if (result.Succeeded)
-            {   
-                // Log out only if deleting was successful
+            { 
+                // Sign out only after successful deletion
                 await _signInManager.SignOutAsync();
                 _logger.LogInformation("User account deleted successfully.");
                 return RedirectToAction("Index", "Home");
             }
         
             foreach (var error in result.Errors)
-            {   
+            { 
                 _logger.LogWarning("Failed to delete user: {Error}", error.Description);    
                 ModelState.AddModelError(string.Empty, error.Description);
             }
@@ -315,6 +346,7 @@ public class AccountController : Controller
         return RedirectToAction("Update");
     }
 
+    // Displays a profile page for a specific user based on their username
     [HttpGet("{UserName}")]
     public async Task<IActionResult> Profile(string UserName)
     {
@@ -330,11 +362,13 @@ public class AccountController : Controller
             return NotFound($"User with username '{UserName}' was not found.");
         }
 
+        // Fetch users quizzes including questions
         var quizzes = await _context.Quizzes
             .Include(q => q.Questions)
             .Where(q => q.user_id == user.Id)
             .ToListAsync();
 
+        // Fetch users history including associated quizzes
         var histories = await _context.Histories
             .Include(h => h.Quiz)
             .Where(h => h.user_id == user.Id)
