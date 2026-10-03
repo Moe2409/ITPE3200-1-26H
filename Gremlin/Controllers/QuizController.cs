@@ -111,7 +111,8 @@ public class QuizController : Controller
                 {
                     QuestionId = q.id,
                     Title = q.title,
-                    AnswerAlternatives = q.AnswerAlternatives
+                    AnswerAlternatives = q.AnswerAlternatives,
+                    IsMultipleChoice = q.CorrectAnswerIndices != null && q.CorrectAnswerIndices.Count > 1
                 }).ToList()
             };
 
@@ -145,18 +146,24 @@ public class QuizController : Controller
             // Calculate Score
             int score = 0;
             int totalQuestions = quiz.Questions.Count;
+            int maxPossibleScore = quiz.Questions.Sum(
+                q => q.CorrectAnswerIndices?.Count ?? 0
+            );
 
             foreach (var submittedQ in model.Questions)
             {
                 var dbQuestion = quiz.Questions.FirstOrDefault(q => q.id == submittedQ.QuestionId);
 
                 // Verify answer against database correct answer index
-                if (dbQuestion != null && submittedQ.SelectedAnswerIndex.HasValue)
+                if (dbQuestion?.CorrectAnswerIndices != null && submittedQ.SelectedAnswerIndices != null)
                 {   
-                    if (dbQuestion.CorrectAnswerIndices != null && 
-                        dbQuestion.CorrectAnswerIndices.Contains(submittedQ.SelectedAnswerIndex.Value))
+                    // Give one point for every submitted selection that matches a correct answer
+                    foreach (var selectedIndex in submittedQ.SelectedAnswerIndices)
                     {
-                        score++;
+                        if (dbQuestion.CorrectAnswerIndices.Contains(selectedIndex))
+                        {
+                            score++;
+                        }
                     }
                 }
             }
@@ -170,7 +177,7 @@ public class QuizController : Controller
                 user_id = userId,
                 quiz_id = quiz.id,
                 score = score,
-                maxPossibleScore = totalQuestions,
+                maxPossibleScore = maxPossibleScore,
                 completed_at = DateTime.UtcNow
             };
 
@@ -213,12 +220,12 @@ public async Task<IActionResult> Create(CreateQuizViewModel vm)
 
     try
     {
-        // 2. Retrieve the ID of the currently authenticated user
+        // Retrieve the ID of the currently authenticated user
         var userId = _userManager.GetUserId(User);
 
         var quiz = new Quiz
         {
-            // 3. Map the view model data to the Quiz entity and its questions
+            // Map the view model data to the Quiz entity and its questions
             title = vm.Title,
             user_id = userId,
             Questions = vm.Questions.Select(q => new Question
@@ -226,10 +233,10 @@ public async Task<IActionResult> Create(CreateQuizViewModel vm)
                 title = q.Title,
                 // Filter out empty or whitespace-only answer alternatives
                 AnswerAlternatives = q.AnswerAlternatives.Where(a => !string.IsNullOrWhiteSpace(a)).ToList(),
-                CorrectAnswerIndices = new List<int> { q.CorrectAnswerIndex }
+                CorrectAnswerIndices = q.CorrectAnswerIndices ?? new List<int>()
             }).ToList()
         };
-        // 4. Add the new quiz to the database context and save changes
+        // Add the new quiz to the database context and save changes
         _gremlinDbContext.Quizzes.Add(quiz);
         await _gremlinDbContext.SaveChangesAsync();
 
@@ -243,7 +250,7 @@ public async Task<IActionResult> Create(CreateQuizViewModel vm)
         _logger.LogError(ex, "An error occurred while creating a quiz for user ID: {UserId}", userId);
         ModelState.AddModelError(string.Empty, "An unexpected error occurred while saving the quiz. Please try again later.");
 
-        // 3. Return the view with the current view model so the user doesn't lose their input
+        // Return the view with the current view model so the user doesn't lose their input
         return View(vm);
     }
 }

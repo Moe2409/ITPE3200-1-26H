@@ -1,92 +1,165 @@
 @model Gremlin.ViewModels.CreateQuizViewModel
 
-<h2>Create New Quiz</h2>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <h2 class="mb-4">Create New Quiz</h2>
 
-<form asp-action="Create" method="post">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <form asp-action="Create" method="post" id="quizForm">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-    <div class="form-group mb-3">
-        <label asp-for="Title" class="form-label font-weight-bold">Quiz Title</label><span class="text-danger">*</span>
-        <input asp-for="Title" class="form-control" placeholder="Enter quiz title..." />
-        <span asp-validation-for="Title" class="text-danger"></span>
+                <!-- Quiz Title -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label fw-bold">Quiz Title</label><span class="text-danger">*</span>
+                            <input asp-for="Title" class="form-control form-control-lg" placeholder="e.g. World History Trivia" required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Questions Container -->
+                <div id="questionsContainer"></div>
+
+                <!-- Action Controls -->
+                <div class="d-flex justify-content-between mb-5">
+                    <button type="button" id="addQuestionBtn" class="btn btn-outline-primary btn-lg">
+                        + Add Question
+                    </button>
+                    <div>
+                        <a asp-action="Table" class="btn btn-secondary btn-lg me-2">Cancel</a>
+                        <button type="submit" class="btn btn-success btn-lg">Save Quiz</button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <hr class="my-4" />
-
-    <div id="questionsContainer">
-        <!-- Dynamic questions gets added here -->
-    </div>
-
-    <div class="mb-3">
-        <button type="button" id="addQuestionBtn" class="btn btn-outline-primary">
-            + Add Question
-        </button>
-    </div>
-
-    <div class="form-group">
-        <button type="submit" class="btn btn-success btn-lg">Save Quiz</button>
-        <a asp-action="Table" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
-    <!-- Using javascript to dynamicaly add questions while making the quiz -->
     <script>
-        let questionIndex = 0;
-
+        // Dynamically adds a new question block
         function addQuestion() {
-            const qIndex = questionIndex++;
             const container = document.getElementById('questionsContainer');
+            const qIndex = container.querySelectorAll('.question-card').length;
 
             const card = document.createElement('div');
-            card.className = 'card mb-3 question-card';
+            card.className = 'card mb-4 shadow-sm question-card';
             card.dataset.qIndex = qIndex;
 
             card.innerHTML = `
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 question-title-text">Question ${qIndex + 1}</h5>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(this)">Remove Question</button>
+                </div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="card-title">Question ${qIndex + 1}</h5>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.question-card').remove()">Remove question</button>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Question Prompt</label><span class="text-danger">*</span>
+                        <input name="Questions[${qIndex}].Title" class="form-control" placeholder="Enter your question here..." required />
                     </div>
-                    <div class="form-group mb-3">
-                        <input name="Questions[${qIndex}].Title" class="form-control" placeholder="Write question here..." required />
-                    </div>
-                    <h6>Answer options (choose the right answer)</h6>
+
+                    <h6 class="fw-bold mt-4 mb-2">Answer Alternatives <small class="text-muted fw-normal">(Check all correct answers)</small></h6>
                     <div class="options-container" id="options-${qIndex}"></div>
-                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addOption(${qIndex})">+ Add alternativ</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addOption(this)">+ Add Option</button>
                 </div>
             `;
 
             container.appendChild(card);
-            
-            // Adding two standard alternatives per question
-            addOption(qIndex);
-            addOption(qIndex);
+
+            // Add two default answer choices per question
+            addOption(card.querySelector('.btn-outline-secondary'));
+            addOption(card.querySelector('.btn-outline-secondary'));
+
+            reindexAll();
         }
 
-        function addOption(qIndex) {
-            const optionsContainer = document.getElementById(`options-${qIndex}`);
+        // Dynamically adds an answer option
+        function addOption(btn) {
+            const card = btn.closest('.question-card');
+            const qIndex = card.dataset.qIndex;
+            const optionsContainer = card.querySelector('.options-container');
             const oIndex = optionsContainer.children.length;
 
             const optRow = document.createElement('div');
-            optRow.className = 'input-group mb-2';
+            optRow.className = 'input-group mb-2 option-row';
 
             optRow.innerHTML = `
                 <div class="input-group-text">
-                    <input class="form-check-input mt-0" type="radio" name="Questions[${qIndex}].CorrectAnswerIndex" value="${oIndex}" ${oIndex === 0 ? 'checked' : ''} title="Mark right answer" />
+                    <input class="form-check-input mt-0 option-checkbox" 
+                           type="checkbox" 
+                           name="Questions[${qIndex}].CorrectAnswerIndices" 
+                           value="${oIndex}" 
+                           ${oIndex === 0 ? 'checked' : ''} 
+                           title="Check if this option is correct" />
                 </div>
-                <input type="text" name="Questions[${qIndex}].AnswerAlternatives[${oIndex}]" class="form-control" placeholder="Alternativ ${oIndex + 1}" required />
-                <button type="button" class="btn btn-outline-danger" onclick="this.closest('.input-group').remove()">&times;</button>
+                <input type="text" name="Questions[${qIndex}].AnswerAlternatives[${oIndex}]" class="form-control option-text" placeholder="Option ${oIndex + 1}" required />
+                <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">&times;</button>
             `;
 
             optionsContainer.appendChild(optRow);
+            reindexAll();
+        }
+
+        // Removes an answer option
+        function removeOption(btn) {
+            const card = btn.closest('.question-card');
+            const optionsContainer = card.querySelector('.options-container');
+
+            if (optionsContainer.children.length <= 2) {
+                alert("A question must have at least 2 answer options.");
+                return;
+            }
+
+            btn.closest('.option-row').remove();
+            reindexAll();
+        }
+
+        // Removes an entire question
+        function removeQuestion(btn) {
+            const container = document.getElementById('questionsContainer');
+            if (container.children.length <= 1) {
+                alert("A quiz must have at least 1 question.");
+                return;
+            }
+
+            btn.closest('.question-card').remove();
+            reindexAll();
+        }
+
+        // Keeps indices contiguous (0, 1, 2...)
+        function reindexAll() {
+            const cards = document.querySelectorAll('.question-card');
+            cards.forEach((card, qIdx) => {
+                card.dataset.qIndex = qIdx;
+                card.querySelector('.question-title-text').textContent = `Question ${qIdx + 1}`;
+
+                const titleInput = card.querySelector('input[name*=".Title"]');
+                if (titleInput) titleInput.name = `Questions[${qIdx}].Title`;
+
+                const options = card.querySelectorAll('.option-row');
+                options.forEach((opt, oIdx) => {
+                    const checkbox = opt.querySelector('.option-checkbox');
+                    const textInput = opt.querySelector('.option-text');
+
+                    if (checkbox) {
+                        checkbox.name = `Questions[${qIdx}].CorrectAnswerIndices`;
+                        checkbox.value = oIdx;
+                    }
+                    if (textInput) {
+                        textInput.name = `Questions[${qIdx}].AnswerAlternatives[${oIdx}]`;
+                        textInput.placeholder = `Option ${oIdx + 1}`;
+                    }
+                });
+            });
         }
 
         document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
 
-        // Adding one deafult question layout
+        // Add initial question on page load
         addQuestion();
     </script>
 }

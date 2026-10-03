@@ -14,7 +14,7 @@ public class QuestionViewModel
     public int QuestionId { get; set; }
     public string? Title { get; set; }
     public List<string> AnswerAlternatives { get; set; } = new();
-
+    public bool IsMultipleChoice { get; set; }
     // Tracks what the user clicks
-    public int? SelectedAnswerIndex { get; set; } 
+    public List<int> SelectedAnswerIndices { get; set; } = new();
 }

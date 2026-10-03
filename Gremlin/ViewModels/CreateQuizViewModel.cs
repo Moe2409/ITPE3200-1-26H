@@ -19,7 +19,7 @@ namespace Gremlin.ViewModels
         // List over lternatives
         public List<string> AnswerAlternatives { get; set; } = new();
 
-        // Index for correct answer
-        public int CorrectAnswerIndex { get; set; }
+        // Indices for correct answers
+        public List<int> CorrectAnswerIndices { get; set; } = new();
     }
 }

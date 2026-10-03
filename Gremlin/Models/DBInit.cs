@@ -122,6 +122,14 @@ public static class DBInit
                         title = "What is the core of Harry Potter's wand?",
                         AnswerAlternatives = new List<string> { "Dragon heartstring", "Phoenix feather", "Unicorn hair", "Thestral tail hair" },
                         CorrectAnswerIndices = new List<int> { 1 }
+                    },
+                    new Question
+                    {
+                        quiz_id = harryPotterFoodQuiz.id,
+                        type_id = 1,
+                        title = "Who would Harry consider a friend after book 1?",
+                        AnswerAlternatives = new List<string> { "Hermoine", "Hagrid", "Draco", "Ron", "Snape" },
+                        CorrectAnswerIndices = new List<int> { 0, 1, 3 }
                     }
                 };
 
