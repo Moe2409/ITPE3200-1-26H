@@ -170,6 +170,7 @@ public class QuizController : Controller
                 user_id = userId,
                 quiz_id = quiz.id,
                 score = score,
+                maxPossibleScore = totalQuestions,
                 completed_at = DateTime.UtcNow
             };
 

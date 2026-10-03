@@ -9,6 +9,7 @@ public class History
     public DateTime? completed_at {get; set;}
 
     public int? score {get; set;}
+    public int? maxPossibleScore {get; set;}
 
     // Navigation properties
     public IdentityUser? User { get; set; }

@@ -47,7 +47,7 @@ else
             {
                 <tr>
                     <td>@(history.Quiz?.title ?? "Deleted Quiz")</td>
-                    <td>@history.score</td>
+                    <td>@history.score/@history.maxPossibleScore</td>
                     <td>@history.completed_at?.ToString("yyyy-MM-dd HH:mm")</td>
                 </tr>
             }
