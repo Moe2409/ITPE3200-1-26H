@@ -6,7 +6,7 @@ Gamification Platform for Course Learning
 
 ## The Gremlins (Members): 
  - Markus Amundsen Rosenhave (maros5493)
- - Leon H. Moe (lemoe3824)
+ - Leon Moe (lemoe3824)
  - Petter Holmen Moldskred (pemol7181)
 
 ## Description:
