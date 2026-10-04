@@ -198,7 +198,7 @@ public class QuizController : Controller
         }
     }
 
-    // Renders the view for creating a new quiz.
+    // Renders the view for creating a new quiz
     [HttpGet("create")]
     [Authorize]
         public IActionResult Create()
@@ -206,7 +206,7 @@ public class QuizController : Controller
         return View(new CreateQuizViewModel());
     }
 
-   // Handles the form submission for creating a new quiz entity
+// Handles the form submission for creating a new quiz entity
 [HttpPost("create")]
 [Authorize]
 [ValidateAntiForgeryToken]
@@ -250,7 +250,7 @@ public async Task<IActionResult> Create(CreateQuizViewModel vm)
         _logger.LogError(ex, "An error occurred while creating a quiz for user ID: {UserId}", userId);
         ModelState.AddModelError(string.Empty, "An unexpected error occurred while saving the quiz. Please try again later.");
 
-        // Return the view with the current view model so the user doesn't lose their input
+        // Return the view with the current view model so the user does not lose their input
         return View(vm);
     }
 }

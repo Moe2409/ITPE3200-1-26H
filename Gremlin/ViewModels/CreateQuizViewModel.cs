@@ -16,7 +16,7 @@ namespace Gremlin.ViewModels
         [Required(ErrorMessage = "Question text is required")]
         public string Title { get; set; } = string.Empty;
 
-        // List over lternatives
+        // List over alternatives
         public List<string> AnswerAlternatives { get; set; } = new();
 
         // Indices for correct answers
