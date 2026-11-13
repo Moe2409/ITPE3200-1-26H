@@ -1,0 +1,223 @@
+@model Gremlin.ViewModels.UpdateQuizViewModel
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <h2 class="mb-4">Update Quiz</h2>
+
+            <form asp-action="Update" method="post" id="quizForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <!-- Quiz Title -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label fw-bold">Quiz Title</label><span class="text-danger">*</span>
+                            <input asp-for="Title" class="form-control form-control-lg" placeholder="e.g. World History Trivia" required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Questions Container -->
+                <div id="questionsContainer"></div>
+
+                <!-- Action Controls -->
+                <div class="d-flex justify-content-between mb-5">
+                    <button type="button" id="addQuestionBtn" class="btn btn-outline-primary btn-lg">
+                        + Add Question
+                    </button>
+                    <div>
+                        <a asp-action="Table" class="btn btn-secondary btn-lg me-2">Cancel</a>
+                        <button type="submit" class="btn btn-success btn-lg">Update Quiz</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Hent eksisterende data fra modellen via JSON (hvis den finnes)
+        const existingQuiz = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+
+        // Dynamically adds a new question block (med støtte for eksisterende data)
+        function addQuestion(questionData = null) {
+            const container = document.getElementById('questionsContainer');
+            const qIndex = container.querySelectorAll('.question-card').length;
+
+            const qTitle = questionData ? questionData.Title || '' : '';
+
+            const card = document.createElement('div');
+            card.className = 'card mb-4 shadow-sm question-card';
+            card.dataset.qIndex = qIndex;
+
+            card.innerHTML = `
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 question-title-text">Question \${qIndex + 1}</h5>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(this)">Remove Question</button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Question Prompt</label><span class="text-danger">*</span>
+                        <input name="Questions[${qIndex}].Title" class="form-control" value="${escapeHtml(qTitle)}" placeholder="Enter your question here..." required />
+                    </div>
+
+                    <h6 class="fw-bold mt-4 mb-2">Answer Alternatives <small class="text-muted fw-normal">(Check all correct answers)</small></h6>
+                    <div class="options-container" id="options-\${qIndex}"></div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addOption(this)">+ Add Option</button>
+                </div>
+            `;
+
+            container.appendChild(card);
+            const optionsContainer = card.querySelector('.options-container');
+
+            if (questionData && questionData.AnswerAlternatives && questionData.AnswerAlternatives.length > 0) {
+                // Legg til eksisterende svoralternativer
+                questionData.AnswerAlternatives.forEach((optText, oIndex) => {
+                    const isChecked = questionData.CorrectAnswerIndices && questionData.CorrectAnswerIndices.includes(oIndex);
+                    appendOptionRow(optionsContainer, qIndex, oIndex, optText, isChecked);
+                });
+            } else {
+                // Legg til to standard tomme alternativer om det er et helt nytt spørsmål
+                appendOptionRow(optionsContainer, qIndex, 0, '', true);
+                appendOptionRow(optionsContainer, qIndex, 1, '', false);
+            }
+
+            reindexAll();
+        }
+
+        // Hjelpefunksjon for å bygge en spesifikk alternativer-rad
+        function appendOptionRow(optionsContainer, qIndex, oIndex, optText = '', isChecked = false) {
+            const optRow = document.createElement('div');
+            optRow.className = 'input-group mb-2 option-row';
+
+            optRow.innerHTML = `
+                <div class="input-group-text">
+                    <input class="form-check-input mt-0 option-checkbox" 
+                           type="checkbox" 
+                           name="Questions[\${qIndex}].CorrectAnswerIndices" 
+                           value="\${oIndex}" 
+                           ${isChecked ? 'checked' : ''} 
+                           title="Check if this option is correct" />
+                </div>
+                <input type="text" name="Questions[\${qIndex}].AnswerAlternatives[${oIndex}]" value="${escapeHtml(optText)}" class="form-control option-text" placeholder="Option \${oIndex + 1}" required />
+                <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">&times;</button>
+            `;
+            optionsContainer.appendChild(optRow);
+        }
+
+        // Dynamically adds an answer option via knappeklikk
+        function addOption(btn) {
+            const card = btn.closest('.question-card');
+            const qIndex = card.dataset.qIndex;
+            const optionsContainer = card.querySelector('.options-container');
+            const oIndex = optionsContainer.children.length;
+
+            appendOptionRow(optionsContainer, qIndex, oIndex, '', false);
+            reindexAll();
+        }
+
+        // Removes an answer option
+        function removeOption(btn) {
+            const card = btn.closest('.question-card');
+            const optionsContainer = card.querySelector('.options-container');
+
+            if (optionsContainer.children.length <= 2) {
+                alert("A question must have at least 2 answer options.");
+                return;
+            }
+
+            btn.closest('.option-row').remove();
+            reindexAll();
+        }
+
+        // Removes an entire question
+        function removeQuestion(btn) {
+            const container = document.getElementById('questionsContainer');
+            if (container.children.length <= 1) {
+                alert("A quiz must have at least 1 question.");
+                return;
+            }
+
+            btn.closest('.question-card').remove();
+            reindexAll();
+        }
+
+        // Keeps indices contiguous (0, 1, 2...)
+        function reindexAll() {
+            const cards = document.querySelectorAll('.question-card');
+            cards.forEach((card, qIdx) => {
+                card.dataset.qIndex = qIdx;
+                card.querySelector('.question-title-text').textContent = `Question ${qIdx + 1}`;  const titleInput = card.querySelector('input[name*=".Title"]'); if (titleInput) titleInput.name = `Questions[${qIdx}].Title`;
+
+                const options = card.querySelectorAll('.option-row');
+                options.forEach((opt, oIdx) => {
+                    const checkbox = opt.querySelector('.option-checkbox');
+                    const textInput = opt.querySelector('.option-text');
+
+                    if (checkbox) {
+                        checkbox.name = `Questions[${qIdx}].CorrectAnswerIndices`; checkbox.value = oIdx; } if (textInput) { textInput.name = `Questions[${qIdx}].AnswerAlternatives[${oIdx}]`; textInput.placeholder = `Option ${oIdx + 1}`;
+                    }
+                });
+            });
+        }
+
+        // Sikkerhetsfunksjon for å unngå XSS ved rendring av eksisterende strenger i HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        document.getElementById('addQuestionBtn').addEventListener('click', () => addQuestion(null));
+
+        document.getElementById('quizForm').addEventListener('submit', function (e) {
+            const cards = document.querySelectorAll('.question-card');
+            
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                const checkboxes = card.querySelectorAll('.option-checkbox');
+                let hasChecked = false;
+
+                checkboxes.forEach(cb => {
+                    if (cb.checked) {
+                        hasChecked = true;
+                    }
+                });
+
+                if (!hasChecked) {
+                    e.preventDefault(); // Stopp innsendingen
+                    alert(`Question ${i + 1} must have at least one correct answer selected.`);
+                    
+                    // Rull skjermen til spørsmålet som mangler riktig svar
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Valgfri visuell markering (f.eks. rød ramme midlertidig)
+                    card.classList.add('border-danger');
+                    setTimeout(() => card.classList.remove('border-danger'), 3000);
+
+                    return false;
+                }
+            }
+        });
+
+        // Initialiser skjemaet med data fra databasen ved oppstart, eller opprett ett tomt spørsmål hvis modellen er tom
+        document.addEventListener("DOMContentLoaded", function () {
+            if (existingQuiz && existingQuiz.Questions && existingQuiz.Questions.length > 0) {
+                existingQuiz.Questions.forEach(q => addQuestion(q));
+            } else {
+                addQuestion(null);
+            }
+        });
+    </script>
+}

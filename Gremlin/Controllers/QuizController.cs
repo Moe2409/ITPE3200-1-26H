@@ -188,7 +188,7 @@ public class QuizController : Controller
 
             // Feedback and Redirect
             TempData["SuccessMessage"] = $"Quiz submitted! You got {score} out of {totalQuestions} correct.";
-            return RedirectToAction(nameof(Table));
+            return RedirectToAction("Result", new { id = history.id });
         }
         catch (Exception ex)  
         {
@@ -206,52 +206,267 @@ public class QuizController : Controller
         return View(new CreateQuizViewModel());
     }
 
-// Handles the form submission for creating a new quiz entity
-[HttpPost("create")]
-[Authorize]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Create(CreateQuizViewModel vm)
-{
-    // Return view with validation errors if model state validation fails
-    if (!ModelState.IsValid)
+    // Handles the form submission for creating a new quiz entity
+    [HttpPost("create")]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(CreateQuizViewModel vm)
     {
-        return View(vm);
-    }
-
-    try
-    {
-        // Retrieve the ID of the currently authenticated user
-        var userId = _userManager.GetUserId(User);
-
-        var quiz = new Quiz
+        // 1. Manuell validering av at hvert spørsmål har minst én riktig svaralternativ
+        if (vm.Questions != null)
         {
-            // Map the view model data to the Quiz entity and its questions
-            title = vm.Title,
-            user_id = userId,
-            Questions = vm.Questions.Select(q => new Question
+            for (int i = 0; i < vm.Questions.Count; i++)
             {
-                title = q.Title,
-                // Filter out empty or whitespace-only answer alternatives
-                AnswerAlternatives = q.AnswerAlternatives.Where(a => !string.IsNullOrWhiteSpace(a)).ToList(),
-                CorrectAnswerIndices = q.CorrectAnswerIndices ?? new List<int>()
-            }).ToList()
-        };
-        // Add the new quiz to the database context and save changes
-        _gremlinDbContext.Quizzes.Add(quiz);
-        await _gremlinDbContext.SaveChangesAsync();
+                var q = vm.Questions[i];
 
-        TempData["SuccessMessage"] = "Quiz created successfully!";
-        return RedirectToAction(nameof(Table));
+                // Sjekk om CorrectAnswerIndices er null, eller om listen er tom
+                if (q.CorrectAnswerIndices == null || !q.CorrectAnswerIndices.Any())
+                {
+                    ModelState.AddModelError($"Questions[{i}].CorrectAnswerIndices", $"Question {i + 1} must have at least one correct answer selected.");
+                }
+            }
+        }
+        else
+        {
+            ModelState.AddModelError("", "The quiz must contain at least one question.");
+        }
+
+        // Return view with validation errors if model state validation fails (inkludert vår nye feilmelding)
+        if (!ModelState.IsValid)
+        {
+            return View(vm);
+        }
+
+        try
+        {
+            // Retrieve the ID of the currently authenticated user
+            var userId = _userManager.GetUserId(User);
+
+            var quiz = new Quiz
+            {
+                // Map the view model data to the Quiz entity and its questions
+                title = vm.Title,
+                user_id = userId,
+                Questions = vm.Questions.Select(q => new Question
+                {
+                    title = q.Title,
+                    // Filter out empty or whitespace-only answer alternatives
+                    AnswerAlternatives = q.AnswerAlternatives.Where(a => !string.IsNullOrWhiteSpace(a)).ToList(),
+                    CorrectAnswerIndices = q.CorrectAnswerIndices ?? new List<int>()
+                }).ToList()
+            };
+            // Add the new quiz to the database context and save changes
+            _gremlinDbContext.Quizzes.Add(quiz);
+            await _gremlinDbContext.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Quiz created successfully!";
+            return RedirectToAction(nameof(Table));
+        }
+        catch (Exception ex)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            _logger.LogError(ex, "An error occurred while creating a quiz for user ID: {UserId}", userId);
+            ModelState.AddModelError(string.Empty, "An unexpected error occurred while saving the quiz. Please try again later.");
+
+            // Return the view with the current view model so the user does not lose their input
+            return View(vm);
+        }
     }
-    catch (Exception ex)
+
+
+    // Renders the view for updating a quiz
+    [HttpGet("update/{id:int}")]
+    [Authorize]
+    public async Task<IActionResult> Update(int id)
     {
-        var userId = _userManager.GetUserId(User);
+        try
+        {
+            // Fetch the quiz and its questions from the database
+            var quiz = await _gremlinDbContext.Quizzes
+                .Include(q => q.Questions)
+                .FirstOrDefaultAsync(q => q.id == id);
 
-        _logger.LogError(ex, "An error occurred while creating a quiz for user ID: {UserId}", userId);
-        ModelState.AddModelError(string.Empty, "An unexpected error occurred while saving the quiz. Please try again later.");
+            if (quiz == null)
+            {
+                _logger.LogWarning("Quiz with ID {QuizId} was not found for editing.", id);
+                return NotFound();
+            }
 
-        // Return the view with the current view model so the user does not lose their input
-        return View(vm);
+            // Map the Quiz entity to your UpdateQuizViewModel
+            var viewModel = new UpdateQuizViewModel
+            {
+                Id = quiz.id,
+                Title = quiz.title,
+                Questions = quiz.Questions.Select(q => new UpdateQuestionViewModel
+                {
+                    Id = q.id,
+                    TypeId = q.type_id,
+                    Title = q.title,
+                    AnswerAlternatives = q.AnswerAlternatives ?? new List<string>(),
+                    CorrectAnswerIndices = q.CorrectAnswerIndices ?? new List<int>()
+                }).ToList()
+            };
+
+            return View(viewModel);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while loading quiz ID {QuizId} for update.", id);
+            return StatusCode(500, "An internal server error occurred.");
+        }
     }
-}
+
+    // update a quiz
+    [HttpPost("update/{id:int}")]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Update(int id, UpdateQuizViewModel vm) // Removed [FromBody]
+    {
+        if (vm == null || id != vm.Id)
+        {
+            return BadRequest("Quiz ID mismatch or quiz data is null.");
+        }
+
+        // Return the view with validation errors if model state validation fails
+        if (!ModelState.IsValid)
+        {
+            return View(vm);
+        }
+
+        try
+        {
+            // Fetch the existing quiz and its questions using the DbContext
+            var existingQuiz = await _gremlinDbContext.Quizzes
+                .Include(q => q.Questions)
+                .FirstOrDefaultAsync(q => q.id == id);
+
+            if (existingQuiz == null)
+            {
+                _logger.LogWarning("Quiz with ID {QuizId} was not found for update.", id);
+                return NotFound($"Quiz with ID {id} not found.");
+            }
+
+            // Map updated quiz title
+            existingQuiz.title = vm.Title;
+
+            var incomingIds = vm.Questions?.Select(q => q.Id).ToList();
+
+            // Remove questions that are no longer present in the update payload
+            var questionsToRemove = existingQuiz.Questions.Where(q => !incomingIds.Contains(q.id)).ToList();
+            foreach (var q in questionsToRemove)
+            {
+                existingQuiz.Questions.Remove(q);
+                _gremlinDbContext.Questions.Remove(q);
+            }
+
+            // Update existing questions or add new ones
+            if (vm.Questions != null)
+            {
+                foreach (var qVm in vm.Questions)
+                {
+                    var existingQuestion = existingQuiz.Questions.FirstOrDefault(q => q.id == qVm.Id);
+                    if (existingQuestion != null)
+                    {
+                        // Update properties of the tracked question in-place
+                        existingQuestion.type_id = qVm.TypeId;
+                        existingQuestion.title = qVm.Title;
+                        existingQuestion.AnswerAlternatives = qVm.AnswerAlternatives != null 
+                            ? new List<string>(qVm.AnswerAlternatives) 
+                            : new List<string>();
+                        existingQuestion.CorrectAnswerIndices = qVm.CorrectAnswerIndices != null 
+                            ? new List<int>(qVm.CorrectAnswerIndices) 
+                            : new List<int>();
+                    }
+                    else
+                    {
+                        // Add a brand new question to the tracked collection
+                        existingQuiz.Questions.Add(new Question
+                        {
+                            quiz_id = id,
+                            type_id = qVm.TypeId,
+                            title = qVm.Title,
+                            AnswerAlternatives = qVm.AnswerAlternatives != null 
+                                ? new List<string>(qVm.AnswerAlternatives) 
+                                : new List<string>(),
+                            CorrectAnswerIndices = qVm.CorrectAnswerIndices != null 
+                                ? new List<int>(qVm.CorrectAnswerIndices) 
+                                : new List<int>()
+                        });
+                    }
+                }
+            }
+
+            // Persist changes to the database
+            await _gremlinDbContext.SaveChangesAsync();
+
+            _logger.LogInformation("Quiz with ID {QuizId} updated successfully.", id);
+            TempData["SuccessMessage"] = "Quiz updated successfully!";
+            return RedirectToAction(nameof(Table));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while updating quiz ID {QuizId}.", id);
+            ModelState.AddModelError(string.Empty, "An unexpected error occurred while updating the quiz. Please try again later.");
+            return View(vm);
+        }
+    }
+
+    // Deletes an existing quiz
+    [HttpPost("{id:int}")]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id)
+    {
+        try
+        {
+            // Fetch the quiz and its related questions
+            var quiz = await _gremlinDbContext.Quizzes
+                .Include(q => q.Questions)
+                .FirstOrDefaultAsync(q => q.id == id);
+
+            if (quiz == null)
+            {
+                _logger.LogWarning("Quiz with ID {QuizId} was not found for deletion.", id);
+                return NotFound($"Quiz with ID {id} not found.");
+            }
+
+            _gremlinDbContext.Quizzes.Remove(quiz);
+            await _gremlinDbContext.SaveChangesAsync();
+
+            _logger.LogInformation("Quiz with ID {QuizId} deleted successfully.", id);
+            return Ok(new { message = "Quiz deleted successfully.", id });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while deleting quiz ID {QuizId}.", id);
+            return StatusCode(500, "An internal server error occurred.");
+        }
+    }
+
+    [HttpGet("result/{id}")]
+    [Authorize]
+    public async Task<IActionResult> Result(int id)
+    {
+        var history = await _gremlinDbContext.Histories // Sørg for at dette matcher ditt DbSet-navn (f.eks. Histories)
+            .Include(h => h.Quiz)
+                .ThenInclude(q => q.Questions)
+            .FirstOrDefaultAsync(h => h.id == id); // Bruker 'id' med liten i
+
+        if (history == null)
+        {
+            return NotFound();
+        }
+
+        var viewModel = new QuizResultViewModel
+        {
+            Id = history.id,
+            Score = history.score ?? 0,              
+            MaxPossibleScore = history.maxPossibleScore ?? 0, 
+            CompletedAt = history.completed_at ?? DateTime.Now, 
+            Quiz = history.Quiz
+        };
+
+        return View(viewModel);
+    }
 }

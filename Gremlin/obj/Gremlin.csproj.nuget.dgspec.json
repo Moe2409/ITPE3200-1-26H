@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\gremlin\\Gremlin.csproj": {}
+    "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\Gremlin\\Gremlin.csproj": {}
   },
   "projects": {
-    "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\gremlin\\Gremlin.csproj": {
+    "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\Gremlin\\Gremlin.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\gremlin\\Gremlin.csproj",
+        "projectUniqueName": "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\Gremlin\\Gremlin.csproj",
         "projectName": "Gremlin",
-        "projectPath": "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\gremlin\\Gremlin.csproj",
+        "projectPath": "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\Gremlin\\Gremlin.csproj",
         "packagesPath": "C:\\Users\\LeonE\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\gremlin\\obj\\",
+        "outputPath": "C:\\Users\\LeonE\\Desktop\\GitHub\\ITPE3200-1-26H\\Gremlin\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\LeonE\\AppData\\Roaming\\NuGet\\NuGet.Config"

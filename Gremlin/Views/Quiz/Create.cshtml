@@ -157,6 +157,36 @@
             });
         }
 
+        document.getElementById('quizForm').addEventListener('submit', function (e) {
+            const cards = document.querySelectorAll('.question-card');
+            
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                const checkboxes = card.querySelectorAll('.option-checkbox');
+                let hasChecked = false;
+
+                checkboxes.forEach(cb => {
+                    if (cb.checked) {
+                        hasChecked = true;
+                    }
+                });
+
+                if (!hasChecked) {
+                    e.preventDefault(); // Stopp innsendingen
+                    alert(`Question ${i + 1} must have at least one correct answer selected.`);
+                    
+                    // Rull skjermen til spørsmålet som mangler riktig svar
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Valgfri visuell markering (f.eks. rød ramme midlertidig)
+                    card.classList.add('border-danger');
+                    setTimeout(() => card.classList.remove('border-danger'), 3000);
+
+                    return false;
+                }
+            }
+        });
+
         document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
 
         // Add initial question on page load

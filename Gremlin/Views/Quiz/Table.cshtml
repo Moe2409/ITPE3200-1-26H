@@ -11,4 +11,26 @@
     }
 </h2>
 
-<partial name="_QuizTable" model="Model" />
+<!-- Search Input -->
+<div class="mb-3">
+    <input type="text" id="quizSearchInput" class="form-control" placeholder="Search quizzes..." />
+</div>
+
+<!-- Wrapper around the partial so JS can target the table rows easily -->
+<div id="quizTableContainer">
+    <partial name="_QuizTable" model="Model" />
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("quizSearchInput").addEventListener("keyup", function () {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll("#quizTableContainer tbody tr");
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? "" : "none";
+            });
+        });
+    </script>
+}
