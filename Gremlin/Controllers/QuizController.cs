@@ -176,6 +176,7 @@ public class QuizController : Controller
             {
                 user_id = userId,
                 quiz_id = quiz.id,
+                quiz_title = quiz.title,
                 score = score,
                 maxPossibleScore = maxPossibleScore,
                 completed_at = DateTime.UtcNow
@@ -184,6 +185,28 @@ public class QuizController : Controller
             _gremlinDbContext.Histories.Add(history);
             
             // Asynchronously persist changes to the database
+            await _gremlinDbContext.SaveChangesAsync();
+
+            foreach (var submittedQ in model.Questions)
+            {
+                var dbQuestion = quiz.Questions.FirstOrDefault(q => q.id == submittedQ.QuestionId);
+
+                if (dbQuestion != null)
+                {
+                    var historyAnswer = new HistoryAnswer
+                    {
+                        history_id = history.id,
+                        title = dbQuestion.title, // Adjust property name if your Question entity uses 'Text' or similar
+                        AnswerAlternatives = dbQuestion.AnswerAlternatives ?? new List<string>(),
+                        AnswerIndices = submittedQ.SelectedAnswerIndices ?? new List<int>(),
+                        CorrectAnswerIndices = dbQuestion.CorrectAnswerIndices ?? new List<int>()
+                    };
+
+                    _gremlinDbContext.historyAnswers.Add(historyAnswer);
+                }
+            }
+
+            // Persist the history answers
             await _gremlinDbContext.SaveChangesAsync();
 
             // Feedback and Redirect
@@ -301,7 +324,6 @@ public class QuizController : Controller
                 Questions = quiz.Questions.Select(q => new UpdateQuestionViewModel
                 {
                     Id = q.id,
-                    TypeId = q.type_id,
                     Title = q.title,
                     AnswerAlternatives = q.AnswerAlternatives ?? new List<string>(),
                     CorrectAnswerIndices = q.CorrectAnswerIndices ?? new List<int>()
@@ -369,7 +391,6 @@ public class QuizController : Controller
                     if (existingQuestion != null)
                     {
                         // Update properties of the tracked question in-place
-                        existingQuestion.type_id = qVm.TypeId;
                         existingQuestion.title = qVm.Title;
                         existingQuestion.AnswerAlternatives = qVm.AnswerAlternatives != null 
                             ? new List<string>(qVm.AnswerAlternatives) 
@@ -384,7 +405,6 @@ public class QuizController : Controller
                         existingQuiz.Questions.Add(new Question
                         {
                             quiz_id = id,
-                            type_id = qVm.TypeId,
                             title = qVm.Title,
                             AnswerAlternatives = qVm.AnswerAlternatives != null 
                                 ? new List<string>(qVm.AnswerAlternatives) 
@@ -448,25 +468,29 @@ public class QuizController : Controller
     [Authorize]
     public async Task<IActionResult> Result(int id)
     {
-        var history = await _gremlinDbContext.Histories // Sørg for at dette matcher ditt DbSet-navn (f.eks. Histories)
+        var history = await _gremlinDbContext.Histories
             .Include(h => h.Quiz)
-                .ThenInclude(q => q.Questions)
-            .FirstOrDefaultAsync(h => h.id == id); // Bruker 'id' med liten i
+            .ThenInclude(q => q.Questions)
+            .Include(h => h.HistoryAnswers)
+            .FirstOrDefaultAsync(h => h.id == id);
 
         if (history == null)
         {
             return NotFound();
         }
 
+
         var viewModel = new QuizResultViewModel
         {
             Id = history.id,
             Score = history.score ?? 0,              
+            Title = history.quiz_title ?? "",         
             MaxPossibleScore = history.maxPossibleScore ?? 0, 
             CompletedAt = history.completed_at ?? DateTime.Now, 
-            Quiz = history.Quiz
+            Quiz = history.Quiz,
+            Answers = history.HistoryAnswers.ToList(),
         };
 
-        return View(viewModel);
-    }
+    return View(viewModel);
+}
 }

@@ -94,7 +94,6 @@ public static class DBInit
                     new Question
                     {
                         quiz_id = harryPotterFoodQuiz.id,
-                        type_id = 1,
                         title = "What is Harry Potter's favorite flavor of Bertie Bott's Every Bottle Bean?",
                         AnswerAlternatives = new List<string> { "Earwax", "Sprout", "Chocolate", "Every flavor means *every* flavor" },
                         CorrectAnswerIndices = new List<int> { 3 }
@@ -102,7 +101,6 @@ public static class DBInit
                     new Question
                     {
                         quiz_id = harryPotterFoodQuiz.id,
-                        type_id = 1,
                         title = "Which Hogwarts house has a ghost known as the Fat Friar?",
                         AnswerAlternatives = new List<string> { "Gryffindor", "Slytherin", "Hufflepuff", "Ravenclaw" },
                         CorrectAnswerIndices = new List<int> { 2 }
@@ -110,7 +108,6 @@ public static class DBInit
                     new Question
                     {
                         quiz_id = harryPotterFoodQuiz.id,
-                        type_id = 1,
                         title = "What type of creature is Aragog, Hagrid's pet spider?",
                         AnswerAlternatives = new List<string> { "Acromantula", "Basilisk", "Thestral", "Hippogriff" },
                         CorrectAnswerIndices = new List<int> { 0 }
@@ -118,7 +115,6 @@ public static class DBInit
                     new Question
                     {
                         quiz_id = harryPotterFoodQuiz.id,
-                        type_id = 1,
                         title = "What is the core of Harry Potter's wand?",
                         AnswerAlternatives = new List<string> { "Dragon heartstring", "Phoenix feather", "Unicorn hair", "Thestral tail hair" },
                         CorrectAnswerIndices = new List<int> { 1 }
@@ -126,7 +122,6 @@ public static class DBInit
                     new Question
                     {
                         quiz_id = harryPotterFoodQuiz.id,
-                        type_id = 1,
                         title = "Who would Harry consider a friend after book 1?",
                         AnswerAlternatives = new List<string> { "Hermoine", "Hagrid", "Draco", "Ron", "Snape" },
                         CorrectAnswerIndices = new List<int> { 0, 1, 3 }

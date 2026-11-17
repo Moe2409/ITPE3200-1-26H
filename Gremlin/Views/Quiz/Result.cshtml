@@ -1,36 +1,148 @@
 @model Gremlin.ViewModels.QuizResultViewModel
 
-<div class="container mt-4">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <!-- Resultat-kort (Sammendrag) -->
-            <div class="card shadow-sm mb-4 bg-light">
-                <div class="card-body text-center py-4">
-                    <h2 class="mb-2">Quiz Results</h2>
-                    <h4 class="text-muted mb-3">@(Model.Quiz?.title ?? "Quiz Summary")</h4>
+        <div class="col-lg-8 col-md-10">
+            
+            <!-- Result Summary Card -->
+            <div class="card border-0 shadow-lg rounded-4 mb-5 overflow-hidden">
+                <div class="card-body text-center p-5 bg-white">
+                    <div class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fw-semibold mb-3">
+                        Quiz Results
+                    </div>
+                    <h2 class="fw-bold text-dark mb-2">@(Model.Title ?? "Quiz Summary")</h2>
+                    <p class="text-muted small mb-4">Completed on @Model.CompletedAt.ToString("g")</p>
                     
-                    <div class="display-4 fw-bold text-primary mb-2">
-                        @Model.Score / @Model.MaxPossibleScore
+                    <div class="display-3 fw-bolder text-primary mb-3 tracking-tight">
+                        @Model.Score <span class="fs-1 text-muted fw-normal">/ @Model.MaxPossibleScore</span>
                     </div>
                     
                     @{
                         var percentage = Model.MaxPossibleScore > 0 
                             ? (int)Math.Round((double)Model.Score / Model.MaxPossibleScore * 100) 
                             : 0;
+                            
+                        string progressColor = percentage >= 80 ? "bg-success" : percentage >= 50 ? "bg-warning" : "bg-danger";
                     }
+
+                    <div class="row justify-content-center mb-4">
+                        <div class="col-md-6">
+                            <div class="progress rounded-pill" style="height: 10px;" role="progressbar" aria-label="Score percentage" aria-valuenow="@percentage" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar @progressColor rounded-pill" style="width: @percentage%"></div>
+                            </div>
+                        </div>
+                    </div>
                     
-                    <p class="fs-5 text-secondary mb-0">
-                        Score: @percentage% | Completed: @Model.CompletedAt.ToString("g")
-                    </p>
+                    <span class="fs-5 fw-medium text-secondary">
+                        Overall Score: <strong class="text-dark">@percentage%</strong>
+                    </span>
                 </div>
             </div>
 
-            <!-- Tilbake-knapp -->
-            <div class="d-flex justify-content-center mb-5">
-                <a asp-action="Table" class="btn btn-primary btn-lg px-5">
+            <!-- Detailed Question Breakdown Header -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h3 class="fw-bold text-dark m-0">Question Breakdown</h3>
+                @if (Model.Answers != null && Model.Answers.Any())
+                {
+                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-2">
+                        @Model.Answers.Count() Questions Total
+                    </span>
+                }
+            </div>
+            
+            @if (Model.Answers != null && Model.Answers.Any())
+            {
+                int qIndex = 1;
+                foreach (var answer in Model.Answers)
+                {
+                    var isCorrect = answer.AnswerIndices.OrderBy(x => x)
+                                        .SequenceEqual(answer.CorrectAnswerIndices.OrderBy(x => x));
+
+                    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden border-start border-5 @(isCorrect ? "border-success" : "border-danger")">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                <h5 class="fw-bold text-dark mb-0">
+                                    <span class="text-muted fw-normal me-1">#@qIndex</span> @(answer.title ?? "Untitled Question")
+                                </h5>
+                                @if (isCorrect)
+                                {
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 fw-semibold">
+                                        <i class="bi bi-check-circle me-1"></i> Correct
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-2 fw-semibold">
+                                        <i class="bi bi-x-circle me-1"></i> Incorrect
+                                    </span>
+                                }
+                            </div>
+
+                            @if (answer.AnswerAlternatives != null && answer.AnswerAlternatives.Any())
+                            {
+                                <ul class="list-group list-group-flush rounded-3 overflow-hidden mt-3 gap-2 border-0">
+                                    @for (int i = 0; i < answer.AnswerAlternatives.Count; i++)
+                                    {
+                                        var isUserChoice = answer.AnswerIndices.Contains(i);
+                                        var isCorrectChoice = answer.CorrectAnswerIndices.Contains(i);
+                                        
+                                        string itemClass = "bg-light text-secondary border-0";
+
+                                        if (isCorrectChoice && isUserChoice)
+                                        {
+                                            // User picked the right answer
+                                            itemClass = "bg-success-subtle text-success-emphasis border border-success";
+                                        }
+                                        else if (isCorrectChoice && !isUserChoice)
+                                        {
+                                            // Correct answer that the user missed
+                                            itemClass = "bg-white text-success border border-2 border-success border-opacity-50";
+                                        }
+                                        else if (isUserChoice && !isCorrectChoice)
+                                        {
+                                            // User picked the wrong answer
+                                            itemClass = "bg-danger-subtle text-danger-emphasis border border-danger-subtle";
+                                        }
+
+                                        <li class="list-group-item @itemClass rounded-3 p-3 d-flex justify-content-between align-items-center">
+                                            <span class="fw-medium">@answer.AnswerAlternatives[i]</span>
+                                            <div class="d-flex gap-2">
+                                                @if (isUserChoice && isCorrectChoice)
+                                                {
+                                                    <span class="badge bg-success rounded-pill px-2 py-1 small">Your Answer</span>
+                                                }
+                                                else if (isUserChoice && !isCorrectChoice)
+                                                {
+                                                    <span class="badge bg-danger rounded-pill px-2 py-1 small">Your Answer</span>
+                                                }
+                                                else if (!isUserChoice && isCorrectChoice)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">Correct Answer</span>
+                                                }
+                                            </div>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    </div>
+                    qIndex++;
+                }
+            }
+            else
+            {
+                <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+                    <p class="text-muted mb-0">No detailed answers are available for this quiz attempt.</p>
+                </div>
+            }
+
+            <!-- Back Button -->
+            <div class="d-flex justify-content-center mt-5 mb-4">
+                <a asp-action="Table" class="btn btn-dark btn-lg rounded-pill px-5 shadow-sm">
                     Back to Quizzes
                 </a>
             </div>
+            
         </div>
     </div>
 </div>

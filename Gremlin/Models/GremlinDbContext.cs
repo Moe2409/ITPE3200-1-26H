@@ -11,9 +11,10 @@ public class GremlinDbContext : IdentityDbContext
     {
         
     }
-    public DbSet<History> Histories { get; set; }
-    public DbSet<Question> Questions { get; set; }
-    public DbSet<Quiz> Quizzes { get; set; }
+    public virtual DbSet<History> Histories { get; set; }
+    public virtual DbSet<Question> Questions { get; set; }
+    public virtual DbSet<Quiz> Quizzes { get; set; }    
+    public virtual DbSet<HistoryAnswer> historyAnswers { get; set; }    
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,5 +47,18 @@ public class GremlinDbContext : IdentityDbContext
             .WithMany(q => q.Histories)
             .HasForeignKey(h => h.quiz_id)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<History>()
+            .HasMany(h => h.HistoryAnswers)
+            .WithOne(ha => ha.History)
+            .HasForeignKey(ha => ha.history_id)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<HistoryAnswer>()
+            .HasOne(ha => ha.History)
+            .WithMany(h => h.HistoryAnswers)
+            .HasForeignKey(ha => ha.history_id)
+            .OnDelete(DeleteBehavior.Cascade);
+
     }
 }
